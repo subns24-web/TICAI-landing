@@ -1186,7 +1186,7 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
    CONFIG — change these before running ads
    ======================================================= */
 const WHATSAPP_NUMBER = "91XXXXXXXXXX";  // your number, no + and no spaces
-const PAYMENT_LINK    = "";              // Razorpay/UPI link. Empty = lead goes to WhatsApp only.
+const PAYMENT_LINK    = "https://rzp.io/rzp/C9Ht5Il"; // Razorpay payment link. Empty = lead goes to WhatsApp only.
 
 /* Workshop date. Empty = auto-roll to the next Sunday 11 AM so the page
    never shows a date that has passed. Pin a batch: "2026-08-30T11:00:00+05:30" */
@@ -1331,7 +1331,8 @@ function register(e){
     ? `నమస్కారం 🙏 AI Workshop (₹199) కి register చేసుకోవాలి.\n\nపేరు: ${g('name')}\nWhatsApp: ${g('phone')}\nBusiness: ${g('biz')}`
     : `Hi 🙏 I'd like to register for the ₹199 AI Workshop.\n\nName: ${g('name')}\nWhatsApp: ${g('phone')}\nBusiness: ${g('biz')}`;
 
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+  // Skip WhatsApp while the number is still the placeholder, so only the payment page opens.
+  if(!/X/i.test(WHATSAPP_NUMBER)) window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   if(PAYMENT_LINK) window.location.href = PAYMENT_LINK;
   return false;
 }
