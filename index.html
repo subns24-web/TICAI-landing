@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI పెద్ద కంపెనీలకే కాదు — Business Owners కోసం 3 గంటల Live AI Workshop (తెలుగులో) | SNTG</title>
+<meta name="description" content="మీ phone లోనే ఉన్న ఉచిత AI tools తో quotations, payment reminders, English letters, GST notices, project reports — అన్నీ మీరే చేసుకోండి. Business owners కోసం 3 గంటల live workshop, పూర్తిగా తెలుగులో. ₹199 మాత్రమే.">
+<link rel="icon" href="sntg-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#004AAD; --brand-2:#0A63D8; --brand-3:#2B8AF0;
+  --brand-soft:#E8F0FC; --brand-softer:#F3F7FD;
+  --gold:#F4C320; --gold-2:#FFD84D; --gold-ink:#3A2A00;
+  --ink:#04101F; --ink-2:#0A1B33; --ink-3:#12294A;
+  --paper:#FFFFFF; --paper-2:#F5F8FC; --paper-3:#E7EEF7;
+  --red:#D92D20; --green:#0E9F6E;
+  --line:rgba(255,255,255,.11); --line-d:#DDE6F2;
+  --t1:#04101F; --t2:#47576B; --t3:#7A8CA3;
+  --radius:16px;
+  --font-te:'Noto Sans Telugu','Plus Jakarta Sans',system-ui,sans-serif;
+  --font-en:'Plus Jakarta Sans','Noto Sans Telugu',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-te); background:var(--paper); color:var(--t1);
+  line-height:1.65; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  padding-bottom:78px;
+}
+body.lang-en{font-family:var(--font-en)}
+img{max-width:100%;display:block}
+.wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 20px}
+.narrow{max-width:840px}
+
+/* ---------- URGENCY ---------- */
+.urgency{
+  background:linear-gradient(90deg,#8F1D16,#D92D20); color:#fff;
+  text-align:center; padding:9px 16px; font-size:.86rem; font-weight:600; position:relative; z-index:60;
+}
+.urgency b{font-weight:800}
+.clock{
+  display:inline-flex;gap:4px;align-items:center;margin-left:6px;font-variant-numeric:tabular-nums;
+  background:rgba(0,0,0,.30);padding:2px 9px;border-radius:6px;font-weight:800;letter-spacing:.4px;font-family:var(--font-en);
+}
+
+/* ---------- NO HEADER. Language toggle floats in the hero and scrolls away. ---------- */
+.langtog{
+  position:absolute;top:18px;right:20px;z-index:6;display:flex;
+  background:rgba(255,255,255,.10);border-radius:999px;padding:3px;
+  border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);
+}
+.langtog button{
+  border:0;background:transparent;color:#B6C6DB;font-size:.75rem;font-weight:700;
+  padding:5px 12px;border-radius:999px;cursor:pointer;font-family:var(--font-en);transition:.18s;
+}
+.langtog button.on{background:#fff;color:var(--brand)}
+/* No logo at the top at all — the brand mark appears only in the footer. */
+
+/* ---------- HERO ---------- */
+.hero{
+  background:
+    radial-gradient(900px 520px at 84% -12%,rgba(43,138,240,.30),transparent 62%),
+    radial-gradient(760px 480px at 4% 106%,rgba(0,74,173,.42),transparent 64%),
+    var(--ink);
+  color:#fff;padding:48px 0 58px;position:relative;overflow:hidden;
+}
+.hero:after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;-webkit-mask-image:radial-gradient(circle at 50% 0,#000,transparent 72%);
+  mask-image:radial-gradient(circle at 50% 0,#000,transparent 72%);opacity:.45;
+}
+.hero-grid{display:grid;grid-template-columns:1.06fr .94fr;gap:44px;align-items:start;position:relative;z-index:2}
+@media(max-width:980px){.hero-grid{grid-template-columns:1fr;gap:30px}.hero{padding:34px 0 44px}}
+.pill{
+  display:inline-flex;align-items:center;gap:8px;background:rgba(43,138,240,.16);
+  border:1px solid rgba(43,138,240,.42);color:#93C2FF;font-size:.75rem;font-weight:700;
+  padding:6px 14px;border-radius:999px;margin-bottom:18px;
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 rgba(244,195,32,.75);animation:p 2s infinite}
+@keyframes p{70%{box-shadow:0 0 0 8px rgba(244,195,32,0)}100%{box-shadow:0 0 0 0 rgba(244,195,32,0)}}
+/* short hook headline — set big, it carries the whole page */
+h1{font-size:clamp(2.3rem,5.4vw,3.7rem);line-height:1.18;font-weight:800;letter-spacing:-1.2px;margin-bottom:18px;text-wrap:balance}
+h1 em{font-style:normal;background:linear-gradient(120deg,var(--gold-2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 u{text-decoration:none;border-bottom:4px solid rgba(43,138,240,.62);padding-bottom:1px}
+@media(max-width:820px){h1 u{border-bottom:0;padding-bottom:0}}
+.sub{font-size:clamp(.98rem,1.8vw,1.06rem);color:#B6C6DB;max-width:600px;margin-bottom:22px}
+.sub b{color:#fff;font-weight:700}
+.hero-ticks{list-style:none;display:grid;gap:10px;margin-bottom:22px}
+.hero-ticks li{display:flex;gap:11px;align-items:flex-start;font-size:.94rem;color:#D6E1EF}
+.tick{
+  width:21px;height:21px;flex:none;border-radius:50%;background:rgba(43,138,240,.18);
+  border:1px solid rgba(43,138,240,.5);display:grid;place-items:center;color:#7FB6FF;
+  font-size:.7rem;font-weight:900;margin-top:3px;
+}
+.seats{max-width:400px}
+.seats-top{display:flex;justify-content:space-between;font-size:.75rem;color:#8FA3BE;margin-bottom:6px;font-weight:600}
+.seats-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.11);overflow:hidden}
+.seats-fill{height:100%;width:82%;border-radius:99px;background:linear-gradient(90deg,var(--gold),#D92D20)}
+
+/* ---------- BUTTON ---------- */
+.btn{
+  display:inline-flex;flex-direction:column;align-items:center;gap:1px;text-decoration:none;
+  background:linear-gradient(135deg,var(--gold-2),var(--gold));color:var(--gold-ink);
+  font-weight:800;font-size:1.02rem;padding:16px 30px;border-radius:14px;
+  box-shadow:0 12px 30px rgba(244,195,32,.30);transition:transform .16s,box-shadow .16s;
+  text-align:center;border:0;cursor:pointer;font-family:inherit;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 16px 38px rgba(244,195,32,.42)}
+.btn small{font-weight:600;font-size:.72rem;opacity:.78}
+.btn-full{width:100%;justify-content:center}
+
+/* ---------- HERO FORM (conversion above the fold) ---------- */
+.regcard{
+  background:#fff;border-radius:20px;overflow:hidden;
+  box-shadow:0 40px 90px rgba(0,0,0,.55);position:sticky;top:20px;
+}
+@media(max-width:980px){.regcard{position:static}}
+.reg-h{background:linear-gradient(160deg,var(--brand),#00306F);color:#fff;padding:20px 26px;text-align:center}
+.reg-h .lbl{font-size:.7rem;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-family:var(--font-en);margin-bottom:8px}
+.reg-h .amt{display:flex;align-items:baseline;justify-content:center;gap:10px;font-family:var(--font-en)}
+.reg-h .old{font-size:1.05rem;color:#8FB4E8;text-decoration:line-through;font-weight:700}
+.reg-h .new{font-size:2.5rem;font-weight:900;letter-spacing:-1.4px;line-height:1}
+.reg-h .when{margin-top:9px;font-size:.8rem;color:#C6DBF7;font-weight:600}
+.reg-b{padding:22px 26px 24px}
+@media(max-width:420px){.reg-b{padding:20px 18px 22px}.reg-h{padding:18px 18px}}
+.reg-b>.h{font-size:.95rem;font-weight:800;text-align:center;margin-bottom:16px;color:var(--t1)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.78rem;font-weight:700;margin-bottom:5px;color:var(--t2)}
+.field input,.field select{
+  width:100%;padding:13px 15px;border:1px solid var(--line-d);border-radius:11px;
+  font-size:.96rem;font-family:inherit;background:var(--paper-2);color:var(--t1);transition:.15s;
+}
+.field input:focus,.field select:focus{outline:0;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(0,74,173,.14)}
+.risk{
+  margin-top:12px;text-align:center;font-size:.76rem;color:var(--t2);line-height:1.6;
+  background:var(--brand-softer);border:1px solid var(--line-d);border-radius:10px;padding:10px 12px;
+}
+.risk b{color:var(--brand)}
+.badges{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:12px}
+.badges span{
+  font-size:.7rem;font-weight:700;color:var(--t2);background:var(--paper-2);
+  border:1px solid var(--line-d);border-radius:999px;padding:5px 11px;
+}
+
+/* trust strip */
+.trust{border-top:1px solid var(--line);margin-top:44px;padding-top:24px;position:relative;z-index:2}
+.trust p{text-align:center;font-size:.71rem;color:#7A8CA3;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:14px;font-family:var(--font-en);font-weight:700}
+.trust-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.chip{background:rgba(43,138,240,.12);border:1px solid rgba(43,138,240,.28);border-radius:999px;padding:7px 16px;font-size:.82rem;color:#B6C6DB;font-weight:600}
+
+/* ---------- SECTIONS ---------- */
+section{padding:68px 0}
+@media(max-width:640px){section{padding:50px 0}}
+.sec-head{text-align:center;max-width:760px;margin:0 auto 40px}
+.eyebrow{font-size:.73rem;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--brand);margin-bottom:11px;font-family:var(--font-en)}
+.dark .eyebrow{color:var(--gold)}
+h2{font-size:clamp(1.45rem,3.1vw,2.2rem);line-height:1.33;font-weight:800;letter-spacing:-.4px;margin-bottom:13px}
+.sec-head p{color:var(--t2);font-size:1.01rem}
+.dark{background:var(--ink);color:#fff}
+.dark h2{color:#fff}.dark .sec-head p{color:#B6C6DB}
+.tint{background:var(--paper-2)}
+
+/* ---------- REPEATING CTA BLOCK ---------- */
+.ctablock{padding:0 0 68px}
+.ctablock.first{padding-top:0}
+.cta-in{
+  max-width:900px;margin:0 auto;background:linear-gradient(160deg,var(--brand),#00306F);
+  border-radius:20px;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;
+  gap:26px;box-shadow:0 22px 50px rgba(0,74,173,.26);
+}
+@media(max-width:760px){.cta-in{flex-direction:column;text-align:center;padding:26px 22px;gap:18px}}
+.cta-txt b{display:block;color:#fff;font-size:1.14rem;font-weight:800;line-height:1.4;margin-bottom:5px}
+.cta-txt span{display:block;color:#C6DBF7;font-size:.88rem}
+.cta-in .btn{flex:none}
+.cta-note{max-width:900px;margin:12px auto 0;text-align:center;font-size:.78rem;color:var(--t3)}
+.dark .cta-note{color:#7A8CA3}
+
+/* myth vs reality — the belief-breaker that has to sit under this hook */
+/* 4 cards → force 2x2 so there's no orphan on the second row */
+.myth-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;max-width:920px;margin:0 auto}
+@media(max-width:700px){.myth-grid{grid-template-columns:1fr}}
+.myth{background:#fff;border:1px solid var(--line-d);border-radius:var(--radius);padding:24px 22px}
+.myth .was{
+  display:flex;gap:9px;align-items:flex-start;font-size:.92rem;color:var(--t3);
+  padding-bottom:13px;margin-bottom:13px;border-bottom:1px dashed var(--line-d);
+}
+.myth .was b{font-weight:600;text-decoration:line-through;text-decoration-color:rgba(217,45,32,.55)}
+.myth .xm{color:var(--red);font-weight:900;flex:none;font-size:.85rem;margin-top:2px}
+.myth .is{display:flex;gap:9px;align-items:flex-start;font-size:.97rem;color:var(--t1);font-weight:700;line-height:1.5}
+.myth .cm{color:var(--brand);font-weight:900;flex:none;font-size:.85rem;margin-top:3px}
+.myth .is span em{font-style:normal;color:var(--brand)}
+
+/* pain */
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.pain{background:#fff;border:1px solid var(--line-d);border-left:3px solid var(--red);border-radius:var(--radius);padding:25px 23px;transition:.2s}
+.pain:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(0,74,173,.11)}
+.pain .ic{font-size:1.55rem;margin-bottom:11px;display:block}
+.pain h3{font-size:1.03rem;font-weight:800;margin-bottom:9px;line-height:1.42}
+.pain p{font-size:.91rem;color:var(--t2)}
+/* was a red "what it costs you" chip — now a blue "what AI does" chip, to match the hook */
+.pain .cost{
+  margin-top:14px;display:block;font-size:.83rem;font-weight:700;color:var(--brand);
+  background:var(--brand-soft);border:1px solid rgba(0,74,173,.16);padding:9px 13px;border-radius:9px;line-height:1.5;
+}
+.pain-foot{text-align:center;margin-top:34px;font-size:1.05rem;font-weight:700;max-width:680px;margin-inline:auto}
+
+/* math */
+.math{max-width:720px;margin:0 auto;background:#fff;border:1px solid var(--line-d);border-radius:20px;overflow:hidden;box-shadow:0 24px 56px rgba(0,74,173,.14)}
+.math-h{padding:21px 26px;background:var(--brand-softer);border-bottom:1px solid var(--line-d)}
+.math-h b{font-size:1.01rem;font-weight:800;display:block;margin-bottom:3px}
+.math-h span{font-size:.84rem;color:var(--t2)}
+.mrow{display:flex;align-items:center;gap:14px;padding:15px 26px;border-bottom:1px solid var(--paper-3)}
+.mrow .mic{width:34px;height:34px;flex:none;border-radius:9px;background:var(--brand-soft);display:grid;place-items:center;font-size:1.02rem}
+.mrow .mtx{flex:1;min-width:0}
+.mrow .mtx b{display:block;font-size:.93rem;font-weight:700;line-height:1.4}
+.mrow .mtx span{font-size:.8rem;color:var(--t3)}
+.mrow .mval{font-family:var(--font-en);font-weight:800;font-size:1rem;color:var(--red);white-space:nowrap}
+.mtot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:19px 26px;background:#FEF3F2;border-bottom:1px solid var(--line-d)}
+.mtot b{font-size:.99rem;font-weight:800}
+.mtot .big{font-family:var(--font-en);font-size:1.68rem;font-weight:900;color:var(--red);letter-spacing:-.5px}
+.mafter{padding:24px 26px;text-align:center;background:var(--brand-soft)}
+.mafter .lbl{font-size:.79rem;font-weight:700;color:var(--brand);margin-bottom:6px}
+.mafter .big{font-family:var(--font-en);font-size:1.95rem;font-weight:900;color:var(--brand);letter-spacing:-1px;line-height:1.15}
+.mafter p{font-size:.85rem;color:#0B3E86;margin-top:8px}
+.math-note{max-width:720px;margin:15px auto 0;font-size:.77rem;color:var(--t3);text-align:center;line-height:1.6}
+
+/* modules */
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.mod{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:var(--radius);padding:23px 21px;transition:.2s}
+.mod:hover{background:rgba(43,138,240,.12);border-color:rgba(43,138,240,.45)}
+.mod-top{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.mod .n{width:32px;height:32px;flex:none;border-radius:9px;background:linear-gradient(140deg,var(--brand-3),var(--brand));color:#fff;display:grid;place-items:center;font-weight:900;font-size:.9rem;font-family:var(--font-en)}
+.mod h3{font-size:1rem;font-weight:800;color:#fff;line-height:1.35}
+.mod p{font-size:.88rem;color:#A9BACE;margin-bottom:13px}
+.mod .repl{display:inline-block;font-size:.73rem;font-weight:700;color:var(--gold-2);background:rgba(244,195,32,.13);border:1px solid rgba(244,195,32,.32);padding:5px 11px;border-radius:8px}
+
+/* who */
+.who-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:0 auto}
+@media(max-width:720px){.who-grid{grid-template-columns:1fr}}
+.who{background:#fff;border:1px solid var(--line-d);border-radius:var(--radius);padding:27px 25px}
+.who h3{font-size:1.04rem;font-weight:800;margin-bottom:15px;display:flex;align-items:center;gap:9px}
+.who ul{list-style:none;display:grid;gap:11px}
+.who li{display:flex;gap:10px;font-size:.91rem;color:var(--t2);align-items:flex-start}
+.mk{width:18px;height:18px;flex:none;border-radius:5px;display:grid;place-items:center;font-size:.62rem;font-weight:900;margin-top:3px}
+.mk.y{background:var(--brand-soft);color:var(--brand)}
+.mk.n{background:#FEF3F2;color:var(--red)}
+
+/* stack */
+.offer{background:#fff;border:1px solid var(--line-d);border-radius:22px;overflow:hidden;box-shadow:0 26px 60px rgba(0,74,173,.16);max-width:760px;margin:0 auto}
+.offer-head{background:linear-gradient(160deg,var(--brand),#00306F);color:#fff;padding:28px 32px;text-align:center}
+.offer-head h3{font-size:1.34rem;font-weight:800;margin-bottom:7px}
+.offer-head p{color:#C6DBF7;font-size:.92rem}
+.stack{list-style:none;padding:8px 0}
+.stack li{display:flex;align-items:flex-start;gap:14px;padding:16px 32px;border-bottom:1px solid var(--paper-3)}
+.stack li:last-child{border-bottom:0}
+.stack .sn{width:26px;height:26px;flex:none;border-radius:8px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:.75rem;font-weight:800;font-family:var(--font-en);margin-top:2px}
+.stack .sb{flex:1}
+.stack b{display:block;font-size:.95rem;font-weight:700;margin-bottom:3px}
+.stack span{font-size:.84rem;color:var(--t3)}
+.stack .val{font-size:.79rem;font-weight:800;color:var(--t3);white-space:nowrap;font-family:var(--font-en);text-decoration:line-through;margin-top:3px}
+.offer-foot{background:var(--brand-softer);padding:26px 32px;text-align:center;border-top:1px solid var(--line-d)}
+.price-old{font-size:.98rem;color:var(--t3);text-decoration:line-through;font-family:var(--font-en);font-weight:700}
+.price-new{font-size:2.5rem;font-weight:900;letter-spacing:-1.5px;line-height:1.1;margin:4px 0 6px;font-family:var(--font-en);color:var(--brand)}
+.price-note{font-size:.85rem;color:var(--t2);margin-bottom:18px}
+.slots{display:inline-flex;align-items:center;gap:8px;background:#FEF6E0;border:1px solid #F5DFA0;color:#7A5B00;font-size:.81rem;font-weight:700;padding:7px 15px;border-radius:999px;margin-top:14px}
+
+/* what happens next */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;max-width:900px;margin:0 auto}
+.stp{background:#fff;border:1px solid var(--line-d);border-radius:var(--radius);padding:24px 22px;text-align:center}
+.stp .sn{width:36px;height:36px;margin:0 auto 13px;border-radius:11px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:900;font-family:var(--font-en)}
+.stp b{display:block;font-size:.98rem;font-weight:800;margin-bottom:6px}
+.stp p{font-size:.87rem;color:var(--t2)}
+
+/* trainer */
+.founder{display:grid;grid-template-columns:240px 1fr;gap:36px;align-items:center}
+@media(max-width:760px){.founder{grid-template-columns:1fr;gap:22px;text-align:center}}
+.f-photo{aspect-ratio:1;border-radius:20px;background:linear-gradient(140deg,var(--ink-3),var(--brand));border:1px solid rgba(43,138,240,.35);display:grid;place-items:center;color:#7FB6FF;font-size:.8rem;overflow:hidden}
+.f-photo img{width:100%;height:100%;object-fit:cover}
+.founder h3{font-size:1.45rem;font-weight:800;color:#fff;margin-bottom:4px}
+.founder .role{color:var(--gold);font-weight:700;font-size:.89rem;margin-bottom:14px;font-family:var(--font-en)}
+.creds{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+@media(max-width:760px){.creds{justify-content:center}}
+.creds span{
+  font-size:.75rem;font-weight:700;color:#D6E1EF;background:rgba(43,138,240,.14);
+  border:1px solid rgba(43,138,240,.32);border-radius:999px;padding:6px 13px;
+}
+.founder p{color:#B6C6DB;font-size:.95rem;margin-bottom:13px}
+.founder p b{color:#fff}
+
+/* testimonials — story format: avatar + name + credibility line + multi-sentence quote */
+.tst-grid{display:grid;gap:18px;max-width:880px;margin:0 auto}
+.tst{
+  background:#fff;border:1px solid var(--line-d);border-radius:var(--radius);
+  padding:26px 26px;display:grid;grid-template-columns:64px 1fr;gap:20px;align-items:start;position:relative;
+}
+@media(max-width:620px){.tst{grid-template-columns:1fr;gap:14px;padding:22px 20px}}
+.tst-av{
+  width:64px;height:64px;border-radius:50%;
+  display:grid;place-items:center;font-weight:700;color:#fff;font-family:var(--font-en);font-size:1.5rem;
+  overflow:hidden;
+}
+.tst-av img{width:100%;height:100%;object-fit:cover}
+/* review-card header: name + meta on top, stars + date under — Google-review anatomy */
+.tst-top{margin-bottom:8px}
+.tst-top b{display:block;font-size:1rem;font-weight:700;line-height:1.35}
+.tst-top .meta{font-size:.79rem;color:var(--t3)}
+.tst-rate{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.stars{color:#FBBC04;font-size:.95rem;letter-spacing:1.5px;line-height:1}
+.tst-when{font-size:.78rem;color:var(--t3)}
+.tst q{display:block;font-size:.96rem;color:var(--t1);line-height:1.75;quotes:none}
+.tst q b{font-weight:800}
+/* social-proof count strip, repeated like the reference does */
+.proof-strip{
+  max-width:880px;margin:0 auto 28px;text-align:center;background:var(--brand-soft);
+  border:1px solid rgba(0,74,173,.18);border-radius:14px;padding:16px 20px;
+}
+.proof-strip b{font-size:1.5rem;font-weight:900;color:var(--brand);font-family:var(--font-en);display:block;line-height:1.2}
+.proof-strip span{font-size:.9rem;color:#0B3E86;font-weight:600}
+/* DELETE THIS BANNER (and the .smp tags) once real quotes are in */
+.sample-warn{
+  max-width:880px;margin:0 auto 20px;background:#FFF7E6;border:1px dashed #E0A800;color:#7A5B00;
+  border-radius:12px;padding:12px 16px;font-size:.83rem;font-weight:700;text-align:center;
+}
+.smp{
+  position:absolute;top:12px;right:14px;background:#FFF7E6;border:1px solid #E0A800;color:#7A5B00;
+  font-size:.62rem;font-weight:800;letter-spacing:.6px;padding:3px 8px;border-radius:6px;font-family:var(--font-en);
+}
+
+/* faq */
+.faq{max-width:760px;margin:0 auto;display:grid;gap:11px}
+details{background:#fff;border:1px solid var(--line-d);border-radius:14px;overflow:hidden}
+details[open]{border-color:var(--brand);box-shadow:0 8px 24px rgba(0,74,173,.12)}
+summary{padding:17px 22px;font-weight:700;font-size:.96rem;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";font-size:1.3rem;color:var(--brand);font-weight:800;line-height:1;flex:none;transition:.2s}
+details[open] summary:after{transform:rotate(45deg)}
+details p{padding:0 22px 19px;color:var(--t2);font-size:.92rem}
+
+/* final */
+.final-grid{display:grid;grid-template-columns:1fr 420px;gap:44px;align-items:center}
+@media(max-width:980px){.final-grid{grid-template-columns:1fr;gap:28px}}
+.final-l h2{color:#fff;margin-bottom:14px}
+.final-l p{color:#C6DBF7;font-size:1rem;margin-bottom:20px}
+.final-l ul{list-style:none;display:grid;gap:10px}
+.final-l li{display:flex;gap:10px;font-size:.94rem;color:#DCE9F8;align-items:flex-start}
+
+/* footer — legal only, no escape links */
+footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;text-align:center}
+.f-logo{height:34px;width:auto;margin:0 auto 14px}
+.f-contact{margin-bottom:16px}
+.f-contact a{color:#B6C6DB;text-decoration:none;font-weight:600}
+.f-contact a:hover{color:var(--gold)}
+.disc{padding-top:18px;border-top:1px solid rgba(255,255,255,.07);font-size:.73rem;line-height:1.7;color:#465A73;max-width:860px;margin:0 auto}
+
+/* ---------- URGENCY POPUP (2-min timer + desktop exit-intent) ---------- */
+.pop-ov{
+  position:fixed;inset:0;z-index:200;background:rgba(2,8,18,.80);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+}
+.pop-ov.on{display:flex;animation:fade .22s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.pop{
+  background:#fff;border-radius:20px;max-width:520px;width:100%;overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,.6);animation:rise .28s cubic-bezier(.2,.8,.3,1) both;
+  position:relative;margin:auto;
+}
+@keyframes rise{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+.pop-h{background:var(--ink);color:#fff;padding:20px 24px;text-align:center}
+.pop-h b{display:block;font-size:1.28rem;font-weight:800;line-height:1.35}
+.pop-h b em{font-style:normal;color:#FF6B5E}
+.pop-x{
+  position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;
+  background:rgba(255,255,255,.14);border:0;color:#fff;font-size:1.1rem;line-height:1;
+  cursor:pointer;z-index:2;font-family:var(--font-en);
+}
+.pop-x:hover{background:rgba(255,255,255,.26)}
+.pop-b{padding:24px 26px 26px;text-align:center}
+@media(max-width:460px){.pop-b{padding:20px 18px 22px}.pop-h{padding:18px 18px}.pop-h b{font-size:1.12rem}}
+.pop-b>.lead{font-size:1.02rem;font-weight:700;color:var(--t1);line-height:1.55;margin-bottom:10px}
+.pop-b>.lead u{text-decoration:none;border-bottom:3px solid rgba(244,195,32,.65)}
+.pop-b>.sub{font-size:.9rem;color:var(--t2);margin-bottom:16px}
+.pop-b>.sub b{color:var(--red);font-weight:800}
+.pop-list{list-style:none;text-align:left;background:var(--brand-softer);border:1px solid var(--line-d);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:grid;gap:8px}
+.pop-list li{display:flex;gap:9px;font-size:.86rem;color:var(--t2);align-items:flex-start}
+.pop-list li b{color:var(--t1);font-weight:700}
+.pop-list .pk{color:var(--brand);font-weight:900;flex:none;font-size:.75rem;margin-top:3px}
+.pop-price{display:flex;align-items:baseline;justify-content:center;gap:9px;margin-bottom:14px;font-family:var(--font-en)}
+.pop-price s{font-size:1rem;color:var(--t3);font-weight:700}
+.pop-price strong{font-size:2.1rem;font-weight:900;color:var(--brand);letter-spacing:-1px;line-height:1}
+.pop .btn{width:100%;justify-content:center}
+.pop-no{
+  display:block;width:100%;background:none;border:0;margin-top:12px;cursor:pointer;
+  font-family:inherit;font-size:.82rem;color:var(--t3);text-decoration:underline;
+}
+.pop-no:hover{color:var(--t2)}
+
+/* sticky */
+.sticky{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;background:rgba(4,16,31,.97);
+  backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;
+}
+.sticky-l{color:#fff;line-height:1.25}
+.sticky-l b{display:block;font-size:.92rem;font-weight:800;font-family:var(--font-en)}
+.sticky-l b s{color:#7A8CA3;font-weight:700;font-size:.8rem;margin-right:5px}
+.sticky-l span{font-size:.71rem;color:#8FA3BE}
+.sticky .btn{padding:12px 22px;font-size:.9rem;flex:none}
+@media(max-width:420px){.sticky-l span{display:none}.sticky .btn{padding:12px 16px;font-size:.85rem}}
+</style>
+</head>
+<body>
+
+<!-- ================= URGENCY ================= -->
+<div class="urgency">
+  <span class="i18n"
+    data-te="<b>₹1,999 → ₹199</b> ఆఫర్ ముగియడానికి"
+    data-en="<b>₹1,999 → ₹199</b> offer ends in"></span>
+  <span class="clock" id="clock">00:00:00</span>
+</div>
+
+<!-- NO header / nav bar — this is a landing page, not a website.
+     The only chrome is the language toggle, which floats in the hero and scrolls away. -->
+
+<!-- ================= HERO + FORM ================= -->
+<section class="hero" id="top">
+  <div class="langtog" role="group" aria-label="Language">
+    <button id="btn-te" class="on" onclick="setLang('te')">తెలుగు</button>
+    <button id="btn-en" onclick="setLang('en')">EN</button>
+  </div>
+
+  <div class="wrap hero-grid">
+    <div>
+      <div class="pill">
+        <span class="dot"></span>
+        <span class="i18n" data-te="Business owners కోసం · పూర్తిగా తెలుగులో" data-en="For business owners · fully in Telugu"></span>
+      </div>
+
+      <!-- HOOK: one line, command form, straight at the pain.
+           LIVE HOOK attacks the root-cause adoption barrier, not a transactional pain.
+           Research basis — Ganguly et al., Indian Growth & Development Review 18(1) 2025
+           (65 MSME interviews, BWM + DEMATEL): "lack of knowledge about AI" is the
+           strongest DRIVING barrier; "lack of resources" is a DEPENDENT one, i.e. the
+           money objection is a symptom of not knowing, not a cause. NASSCOM-Meta (n=300):
+           87% believe AI helps, 65% don't know which tools, 91% think it isn't affordable.
+           <15% of Indian MSMEs have adopted any AI (AIMO) — so ~85% of the audience
+           is sitting behind this exact belief.
+
+           A/B alternates — swap the whole data-te/data-en pair.
+
+           RESEARCH-BACKED (test these first — they hit the root cause):
+            0a. "మీ phone లోనే ఉంది. వాడటం మాత్రం రాదు." / "It's already in your phone. You just don't know how to use it."
+            0b. "AI మంచిదని తెలుసు. ఎక్కడ మొదలుపెట్టాలి?" / "You know AI works. But where do you start?"
+
+           IDENTITY (stings hardest — the "Quit 9 to 5" move):
+            1. "మీరు <em>owner</em> నా? Typist నా?"       / "Are you the <em>owner</em> — or the typist?"
+            2. "మీ business మిమ్మల్ని నడిపిస్తోందా?"      / "Is your business running you?"
+            3. "ఇన్నేళ్ళ business. ఇంకా మీరే గుమాస్తా."   / "All these years — and you're still the clerk."
+            4. "మీ business కి మీరే గుమాస్తానా?"         / "Are you the clerk of your own business?"
+
+           CONTRAST (cleanest argument for a ₹199 offer):
+            5. "Assistant <em>₹20,000</em>. AI <em>₹199</em>." / "An assistant costs <em>₹20,000</em>. AI costs <em>₹199</em>."
+            6. "<em>₹199</em> or <em>₹20,000</em>. మీ ఇష్టం."  / "<em>₹199</em> or <em>₹20,000</em>. Your call."
+
+           VIVID MOMENT (best scroll-stoppers — a scene he was in last week):
+            7. "రాత్రి 11 కి invoice type చేస్తున్నారా?"  / "Still typing invoices at 11 PM?"
+            8. "Quotation గురువారం. Order మంగళవారమే పోయింది." / "You sent the quote Thursday. The order left Tuesday."
+
+           ENGLISH BARRIER (deepest, least-advertised pain in this audience):
+            9. "English రాదని tender వదిలేశారా?"         / "Skipped the tender because of the English?"
+
+           FEAR / LOSS AVERSION (no number to disbelieve — safest for Meta review):
+           10. "మీ competitor ఇప్పటికే <em>AI</em> వాడుతున్నాడు." / "Your competitor already uses <em>AI</em>."
+           11. "డబ్బు బయట ఉంది. మీరు ఇక్కడ."             / "Your money is out there. You're in here."
+
+           COMMAND:
+           12. "ఆ assistant ను hire చెయ్యకండి."          / "Don't hire that assistant."
+           13. "ఇంకెన్నాళ్ళు ఇలాగే?"                     / "How much longer like this?"
+           14. "కాగితం పని ఆపండి. Business పెంచండి."     / "Stop the paperwork. Grow the business."
+
+           COST STATEMENT:
+           15. "కాగితం పనికి నెలకు <em>₹20,000</em> పోతున్నాయి." / "Paperwork is costing you <em>₹20,000</em> a month."
+           Do NOT use income-claim hooks ("నెలకు ₹1 లక్ష సంపాదించండి") — Meta rejects
+           the ad and it isn't true of a ₹199 workshop.                                    -->
+      <h1 class="i18n"
+        data-te="AI <em>పెద్ద కంపెనీలకే</em> అనుకున్నారా?"
+        data-en="Thought AI was only for <em>big companies</em>?"></h1>
+
+      <p class="sub i18n"
+        data-te="కాదు. మీ చేతిలో ఉన్న phone లోనే ఇప్పటికే ఉన్న ఉచిత AI tools తో — quotations, పెండింగ్ payment reminders, English letters, GST notices, project reports — అన్నీ మీరే చేసుకోవచ్చు. <b>3 గంటల live workshop, పూర్తిగా తెలుగులో. Laptop వద్దు. Staff వద్దు. Technical knowledge వద్దు.</b>"
+        data-en="It isn't. The free AI tools already on the phone in your hand can handle your quotations, payment reminders, English letters, GST notices and project reports. <b>A 3-hour live workshop, fully in Telugu. No laptop. No staff. No technical knowledge.</b>"></p>
+
+      <ul class="hero-ticks">
+        <li><span class="tick">✓</span><span class="i18n" data-te="నేర్పే tools చాలావరకు <b>ఉచితం</b> — నెలవారీ subscription అవసరం లేదు" data-en="Most of the tools we teach are <b>free</b> — no monthly subscription"></span></li>
+        <li><span class="tick">✓</span><span class="i18n" data-te="Quotation, proforma, purchase order — 5 నిమిషాల్లో, competitor కంటే ముందు" data-en="Quotations, proformas, POs — in 5 minutes, before your competitor"></span></li>
+        <li><span class="tick">✓</span><span class="i18n" data-te="పెండింగ్ బకాయిలు వసూలు చేసే reminder + legal notice drafts" data-en="Payment-chase sequences and legal notice drafts for pending dues"></span></li>
+        <li><span class="tick">✓</span><span class="i18n" data-te="GST notice, bank letter English లో వచ్చినా — తెలుగులో అర్థం చేసుకోండి" data-en="GST notices and bank letters explained back to you in Telugu"></span></li>
+        <li><span class="tick">✓</span><span class="i18n" data-te="Bank loan project report, tender bid — draft మీరే తయారు చేసుకోండి" data-en="Draft your own bank project report and tender bid"></span></li>
+      </ul>
+
+      <div class="seats">
+        <div class="seats-top">
+          <span class="i18n" data-te="ఈ batch seats" data-en="Seats in this batch"></span>
+          <span class="i18n" data-te="82% నిండాయి" data-en="82% full"></span>
+        </div>
+        <div class="seats-bar"><div class="seats-fill"></div></div>
+      </div>
+    </div>
+
+    <!-- THE conversion point -->
+    <div class="regcard" id="reg">
+      <div class="reg-h">
+        <div class="lbl i18n" data-te="Live AI Workshop — తెలుగు" data-en="Live AI Workshop — Telugu"></div>
+        <div class="amt"><span class="old">₹1,999</span><span class="new">₹199</span></div>
+        <div class="when" id="wdate2"></div>
+      </div>
+      <div class="reg-b">
+        <div class="h i18n" data-te="మీ seat ఇప్పుడే book చేయండి" data-en="Book your seat now"></div>
+        <form onsubmit="return register(event)">
+          <div class="field">
+            <label class="i18n" data-te="మీ పేరు" data-en="Your name"></label>
+            <input type="text" name="name" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label class="i18n" data-te="WhatsApp నంబర్" data-en="WhatsApp number"></label>
+            <input type="tel" name="phone" required pattern="[0-9+ ]{10,15}" placeholder="+91 " autocomplete="tel">
+          </div>
+          <div class="field">
+            <label class="i18n" data-te="మీ business" data-en="Your business"></label>
+            <select name="biz">
+              <option class="i18n" data-te="Manufacturing / Job work" data-en="Manufacturing / job work"></option>
+              <option class="i18n" data-te="Trading / Distribution" data-en="Trading / distribution"></option>
+              <option class="i18n" data-te="Retail / Kirana / Shop" data-en="Retail / kirana / shop"></option>
+              <option class="i18n" data-te="Contractor / Services" data-en="Contractor / services"></option>
+              <option class="i18n" data-te="Clinic / Hospital" data-en="Clinic / hospital"></option>
+              <option class="i18n" data-te="School / College / Institute" data-en="School / college / institute"></option>
+              <option class="i18n" data-te="ఇతరం" data-en="Other"></option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-full">
+            <span class="i18n" data-te="₹199 కట్టి seat confirm చేయండి →" data-en="Pay ₹199 and confirm my seat →"></span>
+            <small class="i18n" data-te="₹1,999 → ₹199 · ఈ batch కి మాత్రమే" data-en="₹1,999 → ₹199 · this batch only"></small>
+          </button>
+        </form>
+
+        <div class="risk i18n"
+          data-te="నచ్చకపోతే workshop అయిన <b>24 గంటల్లో</b> ఒక్క WhatsApp message చాలు — ₹199 తిరిగి ఇచ్చేస్తాం. కారణం అడగము."
+          data-en="Not useful? One WhatsApp message within <b>24 hours</b> and we refund the ₹199. We won't ask why."></div>
+
+        <div class="badges">
+          <span class="i18n" data-te="🔒 దాచిన charges లేవు" data-en="🔒 No hidden charges"></span>
+          <span class="i18n" data-te="📱 Phone చాలు" data-en="📱 Phone is enough"></span>
+          <span class="i18n" data-te="🎓 Certificate" data-en="🎓 Certificate"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap trust">
+    <p class="i18n" data-te="ఎవరి కోసం" data-en="Built for"></p>
+    <div class="trust-row">
+      <span class="chip i18n" data-te="🏭 Manufacturing &amp; Job work" data-en="🏭 Manufacturing &amp; job work"></span>
+      <span class="chip i18n" data-te="📦 Traders &amp; Distributors" data-en="📦 Traders &amp; distributors"></span>
+      <span class="chip i18n" data-te="🏪 Retail &amp; Kirana" data-en="🏪 Retail &amp; kirana"></span>
+      <span class="chip i18n" data-te="🔧 Contractors &amp; Services" data-en="🔧 Contractors &amp; services"></span>
+      <span class="chip i18n" data-te="🏥 Clinics &amp; 🎓 Institutes" data-en="🏥 Clinics &amp; 🎓 institutes"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MYTH vs REALITY (answers the hook head-on) ================= -->
+<section class="tint">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="ముందు ఇది తేల్చుకుందాం" data-en="Let's clear this up first"></div>
+      <h2 class="i18n" data-te="AI గురించి మీరు అనుకుంటున్న 4 విషయాలు — నాలుగూ తప్పు" data-en="The 4 things you believe about AI — all four are wrong"></h2>
+      <p class="i18n" data-te="ఇండియాలో 100 చిన్న businesses లో దాదాపు 85 ఇంకా AI వాడట్లేదు. కారణం డబ్బు కాదు, తెలివి కాదు — ఎవరూ సరిగ్గా చెప్పకపోవడం. అడ్డుపడుతున్న నాలుగు అపోహలు ఇవే." data-en="Roughly 85 out of every 100 small businesses in India still don't use AI. Not because of money, and not because they're slow — because nobody explained it properly. These are the four beliefs in the way."></p>
+    </div>
+
+    <div class="myth-grid">
+      <div class="myth">
+        <div class="was"><span class="xm">✕</span><b class="i18n" data-te="&quot;అది పెద్ద కంపెనీలకే. మనలాంటి వాళ్ళకి కాదు.&quot;" data-en="&quot;That's for big companies. Not for people like us.&quot;"></b></div>
+        <div class="is"><span class="cm">✓</span><span class="i18n" data-te="పెద్ద కంపెనీ వాడే <em>అదే tool</em> మీరూ వాడతారు. వాళ్ళకి ఒకటి, మీకు ఒకటి అని లేదు." data-en="You use the <em>exact same tool</em> a large company uses. There isn't one version for them and another for you."></span></div>
+      </div>
+
+      <div class="myth">
+        <div class="was"><span class="xm">✕</span><b class="i18n" data-te="&quot;లక్షల్లో ఖర్చు అవుతుంది.&quot;" data-en="&quot;It costs lakhs.&quot;"></b></div>
+        <div class="is"><span class="cm">✓</span><span class="i18n" data-te="మేము నేర్పే tools చాలావరకు <em>ఉచితం</em>. మీరు ఇవాళ పెట్టే ఖర్చు — ఈ workshop కి ₹199. అంతే." data-en="Most of the tools we teach are <em>free</em>. The only money you spend today is ₹199 for this workshop."></span></div>
+      </div>
+
+      <div class="myth">
+        <div class="was"><span class="xm">✕</span><b class="i18n" data-te="&quot;Computer, laptop, staff కావాలి.&quot;" data-en="&quot;You need a computer, a laptop, staff.&quot;"></b></div>
+        <div class="is"><span class="cm">✓</span><span class="i18n" data-te="మీ చేతిలో ఉన్న <em>phone చాలు</em>. Install చెయ్యాల్సింది ఏమీ లేదు. కొత్తగా ఎవరినీ పెట్టుకోనవసరం లేదు." data-en="The <em>phone in your hand</em> is enough. Nothing to install. Nobody new to hire."></span></div>
+      </div>
+
+      <div class="myth">
+        <div class="was"><span class="xm">✕</span><b class="i18n" data-te="&quot;అంతా English లో ఉంటుంది. నాకు అర్థం కాదు.&quot;" data-en="&quot;It's all in English. I won't follow it.&quot;"></b></div>
+        <div class="is"><span class="cm">✓</span><span class="i18n" data-te="మీరు <em>తెలుగులో మాట్లాడితే చాలు</em> — అది English లో రాసిస్తుంది. Typing కూడా అవసరం లేదు." data-en="You <em>speak in Telugu</em> — it writes back in English. You don't even need to type."></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WHAT IT ACTUALLY DOES ================= -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="మరి నా business లో ఏం చేస్తుంది?" data-en="So what does it do for MY business?"></div>
+      <h2 class="i18n" data-te="ప్రతి వారం మిమ్మల్ని ఆపుతున్న 6 పనులు" data-en="The 6 things that stop you every week"></h2>
+      <p class="i18n" data-te="ఇవి పెద్ద పెద్ద ఆలోచనలు కావు. మీ business లో నిజంగా జరిగే పనులు. AI అంటే ఏమిటో అర్థం కావాలంటే — ఈ ఆరు చాలు." data-en="These aren't grand ideas. They're what actually happens in your business. If you want to understand what AI means for you, these six are enough."></p>
+    </div>
+
+    <div class="pain-grid">
+      <div class="pain">
+        <span class="ic">⏳</span>
+        <h3 class="i18n" data-te="&quot;90 రోజులు అయ్యింది సార్, payment ఇంకా రాలేదు&quot;" data-en="&quot;It's been 90 days and the payment still hasn't come&quot;"></h3>
+        <p class="i18n" data-te="Material ఇచ్చేశారు. Invoice పంపారు. ఇప్పుడు ప్రతి వారం phone చేసి అడగాలి — మర్యాదగా అడిగితే పట్టించుకోరు, గట్టిగా అడిగితే customer పోతాడు. ఆ మధ్య దారి రాయడమే అసలు కళ." data-en="You delivered the material. You sent the invoice. Now you're calling every week — too polite and they ignore you, too firm and you lose the customer. Writing that middle line is the whole skill."></p>
+        <span class="cost i18n" data-te="→ AI తో: మొదటి reminder నుంచి legal notice draft వరకు — ఏ దశలో ఏం రాయాలో అది రాసిస్తుంది. 2 నిమిషాలు." data-en="→ With AI: every stage from the first reminder to a legal notice draft, written for you. Two minutes."></span>
+      </div>
+      <div class="pain">
+        <span class="ic">📄</span>
+        <h3 class="i18n" data-te="Quotation పంపేసరికి order వేరేవాళ్ళకి పోయింది" data-en="By the time your quote went out, the order was gone"></h3>
+        <p class="i18n" data-te="Enquiry సోమవారం వచ్చింది. Rate వేసి, English లో typing చేసి, format చేసి పంపేసరికి గురువారం. అటువైపు వాళ్ళు మంగళవారమే పంపారు. Product మీది బాగుంది — కానీ order వాళ్ళది." data-en="The enquiry came Monday. You worked out the rate, typed it in English, formatted it — and sent it Thursday. The other guy sent his on Tuesday. Your product was better. His order."></p>
+        <span class="cost i18n" data-te="→ AI తో: rate చెప్తే చాలు — terms, validity, GST తో పూర్తి quotation 5 నిమిషాల్లో సిద్ధం." data-en="→ With AI: give it the rate and a complete quotation — terms, validity, GST — is ready in 5 minutes."></span>
+      </div>
+      <div class="pain">
+        <span class="ic">📋</span>
+        <h3 class="i18n" data-te="GST notice వచ్చింది — ఏముందో అర్థం కాలేదు" data-en="A GST notice arrived — and you couldn't read it"></h3>
+        <p class="i18n" data-te="Portal లో English లో ఒక notice. చదివితే భయం. CA కి పంపితే &quot;చూస్తాను సార్&quot; అని 4 రోజులు. ఆ 4 రోజులూ మీకు నిద్ర పట్టదు. అందులో ఏముందో ఆ క్షణమే తెలుగులో తెలుసుకోగలిగితే?" data-en="A notice in English on the portal. Reading it is frightening. You forward it to your CA and hear &quot;I'll look at it&quot; for four days. Four sleepless nights. What if you could know what it says, in Telugu, that same minute?"></p>
+        <span class="cost i18n" data-te="→ AI తో: notice photo తీసి పెడితే — అందులో ఏముంది, ఎన్ని రోజుల్లో సమాధానం ఇవ్వాలి, తెలుగులో వెంటనే." data-en="→ With AI: photograph the notice and get what it says and by when you must reply — in Telugu, instantly."></span>
+      </div>
+      <div class="pain">
+        <span class="ic">🏦</span>
+        <h3 class="i18n" data-te="Bank loan కి project report — ₹15,000 అడిగారు" data-en="A project report for the bank loan — they quoted ₹15,000"></h3>
+        <p class="i18n" data-te="Loan కావాలంటే DPR / project report కావాలి. Consultant ₹15,000 అడుగుతాడు, 3 వారాలు తీసుకుంటాడు. అందులో ఉండేది మీ business వివరాలే — మీకు నోటికి వచ్చినవే. దాన్ని కాగితం మీద పెట్టడమే problem." data-en="You need a DPR for the loan. The consultant wants ₹15,000 and three weeks. What's inside it is your own business — facts you know by heart. Getting them onto paper is the only hard part."></p>
+        <span class="cost i18n" data-te="→ AI తో: మీ business వివరాలు తెలుగులో చెప్తే — machinery, capacity, projections తో draft report తయారు. CA చూసి finalise చేస్తారు." data-en="→ With AI: describe your business in Telugu and get a draft report — machinery, capacity, projections. Your CA finalises it."></span>
+      </div>
+      <div class="pain">
+        <span class="ic">🏢</span>
+        <h3 class="i18n" data-te="Tender వచ్చింది — English చూసి వదిలేశారు" data-en="A tender came up — you saw the English and let it go"></h3>
+        <p class="i18n" data-te="GeM portal లో, ప్రభుత్వ tender లో మీ product కే demand ఉంది. కానీ technical bid, covering letter, compliance sheet — అన్నీ English లో రాయాలి. మీ కంటే తక్కువ quality వాళ్ళకి ఆ tender వచ్చింది. వాళ్ళ English బాగుంది, అంతే." data-en="There's a government tender on GeM for exactly what you make. But the technical bid, the covering letter, the compliance sheet are all in English. Someone with worse quality won it. Their English was better. That's all."></p>
+        <span class="cost i18n" data-te="→ AI తో: tender లో ఏం అడుగుతున్నారో తెలుగులో అర్థమవుతుంది. Covering letter, technical bid, compliance sheet — English లో తయారు." data-en="→ With AI: understand what the tender asks in Telugu, then produce the covering letter, technical bid and compliance sheet in English."></span>
+      </div>
+      <div class="pain">
+        <span class="ic">🎯</span>
+        <h3 class="i18n" data-te="ప్రభుత్వ subsidy ఉందని తర్వాత తెలిసింది" data-en="You found out about the subsidy afterwards"></h3>
+        <p class="i18n" data-te="Machine కొన్న తర్వాత ఎవరో చెప్తారు — &quot;దానికి subsidy ఉందిగా సార్&quot;. Udyam, MSME schemes, state incentives — ఏవి మీకు వర్తిస్తాయో ఎవరూ చెప్పరు. తెలిసేసరికి deadline అయిపోతుంది." data-en="Someone mentions it after you've already bought the machine — &quot;there was a subsidy for that.&quot; Udyam benefits, MSME schemes, state incentives — nobody tells you which apply to you. By the time you find out, the deadline is gone."></p>
+        <span class="cost i18n" data-te="→ AI తో: మీ business వివరాలు చెప్తే — ఏ scheme కి అర్హత ఉందో, ఏ కాగితాలు కావాలో జాబితా వస్తుంది." data-en="→ With AI: describe your business and get a list of which schemes you may qualify for and what papers each needs."></span>
+      </div>
+    </div>
+
+    <p class="pain-foot i18n"
+      data-te="ఇవన్నీ చెయ్యడానికి కొత్త software కొనక్కర్లేదు. కొత్తగా ఎవరినీ పెట్టుకోనవసరం లేదు. మీ phone లో ఇప్పటికే ఉన్నదాన్ని <b>ఎలా వాడాలో తెలియాలి</b> — అంతే."
+      data-en="None of this needs new software. None of it needs a new hire. It only needs you to <b>know how to use what's already on your phone</b>."></p>
+  </div>
+</section>
+
+<!-- CTA 1 -->
+<div class="ctablock">
+  <div class="wrap">
+    <div class="cta-in">
+      <div class="cta-txt">
+        <b class="i18n" data-te="ఇవన్నీ ఒక ఆదివారం ఉదయం నేర్చుకోవచ్చు." data-en="You can learn all of it in one Sunday morning."></b>
+        <span class="i18n" data-te="₹199 · పూర్తిగా తెలుగులో · phone చాలు · నచ్చకపోతే డబ్బు తిరిగి" data-en="₹199 · fully in Telugu · phone is enough · full refund if it's not useful"></span>
+      </div>
+      <a href="#reg" class="btn i18n" data-te="₹199 కి seat book చేయండి →" data-en="Book my seat for ₹199 →"></a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODULES ================= -->
+<section class="dark">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="3 గంటల్లో ఏం నేర్చుకుంటారు" data-en="What you'll learn in 3 hours"></div>
+      <h2 class="i18n" data-te="Theory లేదు. మీ business కాగితం పనులే — live గా చేసి చూపిస్తాం." data-en="No theory. Your actual paperwork, done live."></h2>
+      <p class="i18n" data-te="ప్రతి module ఒక నిజమైన business పని. మేము చేసి చూపిస్తాం, మీరు అదే క్షణంలో మీ phone లో చేస్తారు. <b>చూసి నేర్చుకోవడం కాదు — చేసి నేర్చుకోవడం.</b> Workshop అయ్యేసరికి ఈ ఎనిమిదీ మీకు వచ్చేసి ఉంటాయి." data-en="Every module is one real business task. We do it, then you do it on your own phone in that same moment. <b>You don't watch — you do.</b> By the end, all eight are yours."></p>
+    </div>
+
+    <div class="mod-grid">
+      <div class="mod">
+        <div class="mod-top"><div class="n">1</div><h3 class="i18n" data-te="తెలుగులో చెప్పండి — professional English లో వస్తుంది" data-en="Speak Telugu, get professional English"></h3></div>
+        <p class="i18n" data-te="Buyer emails, supplier letters, bank correspondence, corporate customer replies. మీరు తెలుగులో చెప్తే AI సరైన business English లో రాసిస్తుంది." data-en="Buyer emails, supplier letters, bank correspondence, replies to corporate customers. You say it in Telugu, AI writes it in proper business English."></p>
+        <span class="repl i18n" data-te="↳ ఇక English రాసేవాళ్ళ కోసం ఎదురుచూడక్కర్లేదు" data-en="↳ No more waiting on someone to write your English"></span>
+      </div>
+      <div class="mod">
+        <div class="mod-top"><div class="n">2</div><h3 class="i18n" data-te="Quotation &amp; Proforma — 5 నిమిషాల్లో" data-en="Quotations &amp; proformas in 5 minutes"></h3></div>
+        <p class="i18n" data-te="Enquiry వచ్చిన గంటలోనే professional quotation పంపడం. Terms, validity, payment conditions, GST — అన్నీ సరిగ్గా." data-en="Send a professional quotation within an hour of the enquiry — terms, validity, payment conditions, GST, all correct."></p>
+        <span class="repl i18n" data-te="↳ వేగమే order గెలిపిస్తుంది" data-en="↳ Speed is what wins the order"></span>
+      </div>
+      <div class="mod">
+        <div class="mod-top"><div class="n">3</div><h3 class="i18n" data-te="పెండింగ్ బకాయిలు వసూలు చెయ్యడం" data-en="Getting your pending payments in"></h3></div>
+        <p class="i18n" data-te="మొదటి reminder నుంచి చివరి legal notice draft వరకు — ఏ దశలో ఏం రాయాలి. MSME Samadhaan లాంటి దారులు ఏమున్నాయో కూడా చెప్తాం." data-en="From the first polite reminder to a final legal notice draft — what to write at each stage. We also cover routes like MSME Samadhaan."></p>
+        <span class="repl i18n" data-te="↳ మీ డబ్బు మీ ఖాతాలోకి రావాలి" data-en="↳ Your money, back in your account"></span>
+      </div>
+      <div class="mod">
+        <div class="mod-top"><div class="n">4</div><h3 class="i18n" data-te="GST notice, bank letter — తెలుగులో అర్థం చేసుకోవడం" data-en="Understanding GST notices and bank letters, in Telugu"></h3></div>
+        <p class="i18n" data-te="ఏ English document అయినా photo తీసి పెడితే — అందులో ఏముంది, ఏం అడుగుతున్నారు, ఎన్ని రోజుల్లో సమాధానం ఇవ్వాలి — తెలుగులో చెప్తుంది." data-en="Photograph any English document and get back — in Telugu — what it says, what's being asked, and by when."></p>
+        <span class="repl i18n" data-te="↳ Filing CA చేస్తారు — కానీ భయం మీకు ఉండదు" data-en="↳ Your CA still files it — but you're no longer in the dark"></span>
+      </div>
+      <div class="mod">
+        <div class="mod-top"><div class="n">5</div><h3 class="i18n" data-te="Bank loan Project Report (DPR) draft" data-en="Drafting your bank loan project report"></h3></div>
+        <p class="i18n" data-te="మీ business వివరాలు తెలుగులో చెప్తే — machinery list, capacity, market, projections తో ఒక draft project report తయారవుతుంది. దాన్ని మీ CA కి ఇస్తే సరిచేసి ఇస్తారు." data-en="Describe your business in Telugu and get a draft project report — machinery list, capacity, market, projections. Hand that to your CA to finalise."></p>
+        <span class="repl i18n" data-te="↳ Consultant fee లో పెద్ద భాగం ఆదా" data-en="↳ Most of the consultant fee, saved"></span>
+      </div>
+      <div class="mod">
+        <div class="mod-top"><div class="n">6</div><h3 class="i18n" data-te="Tender &amp; GeM bid documents" data-en="Tender &amp; GeM bid documents"></h3></div>
+        <p class="i18n" data-te="Tender document చదివి అందులో ఏం అడుగుతున్నారో తెలుగులో అర్థం చేసుకోవడం. Covering letter, technical bid, compliance sheet — అన్నీ English లో తయారు చేసుకోవడం." data-en="Understand, in Telugu, exactly what a tender asks for. Then produce the covering letter, technical bid and compliance sheet in English."></p>
+        <span class="repl i18n" data-te="↳ ఇక English చూసి tender వదిలేయక్కర్లేదు" data-en="↳ Never skip a tender because of the English again"></span>
+      </div>
+      <div class="mod">
+        <div class="mod-top"><div class="n">7</div><h3 class="i18n" data-te="Excel రాకపోయినా Excel పని — ఇంకా marketing" data-en="Excel without knowing Excel — plus marketing"></h3></div>
+        <p class="i18n" data-te="Stock register, party ledger, salary sheet, monthly summary — తెలుగులో చెప్తే చాలు. అలాగే catalogue, offer posters, product descriptions — designer లేకుండా మీరే." data-en="Stock registers, party ledgers, salary sheets, monthly summaries — just describe them in Telugu. Plus catalogues, posters and product descriptions, without a designer."></p>
+        <span class="repl i18n" data-te="↳ Data entry, designer ఖర్చు రెండూ తగ్గుతాయి" data-en="↳ Cuts both the data-entry and the designer bill"></span>
+      </div>
+      <div class="mod">
+        <div class="mod-top"><div class="n">8</div><h3 class="i18n" data-te="మీ business కి సొంత AI Assistant" data-en="Your own business AI assistant"></h3></div>
+        <p class="i18n" data-te="మీ rate list, terms, products, policies ఒకసారి AI కి నేర్పితే — ప్రతిసారీ మొదటి నుంచి చెప్పక్కర్లేదు. ఇదే మీ 24 గంటల employee." data-en="Teach it your rate list, terms, products and policies once, and stop explaining from scratch every time. This is your 24-hour employee."></p>
+        <span class="repl i18n" data-te="↳ ఇక్కడి నుంచే AI Agent మొదలవుతుంది" data-en="↳ This is where a real AI agent begins"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA 3 -->
+<div class="ctablock" style="background:var(--ink);padding-top:0">
+  <div class="wrap">
+    <div class="cta-in" style="background:linear-gradient(160deg,var(--brand-3),var(--brand))">
+      <div class="cta-txt">
+        <b class="i18n" data-te="8 modules. 3 గంటలు. ₹199." data-en="8 modules. 3 hours. ₹199."></b>
+        <span class="i18n" data-te="Workshop record చెయ్యము — live లో వచ్చిన వాళ్ళకి మాత్రమే." data-en="Not recorded — live attendees only."></span>
+      </div>
+      <a href="#reg" class="btn i18n" data-te="నా seat book చేయండి →" data-en="Book my seat →"></a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MATH ================= -->
+<section class="tint">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="ఇంకో విషయం" data-en="One more thing"></div>
+      <h2 class="i18n" data-te="ఇది నేర్చుకుంటే డబ్బు కూడా మిగులుతుంది" data-en="Learning this saves you money too"></h2>
+      <p class="i18n" data-te="ఇది workshop కి ముఖ్య కారణం కాదు — కానీ చెప్పాల్సిన విషయం. ఈ కాగితం పనుల కోసం చాలామంది ఇప్పటికే ఎవరెవరికో డబ్బు ఇస్తున్నారు. ఆ పనులు మీరే చేసుకోగలిగితే ఆ ఖర్చు తగ్గుతుంది." data-en="This isn't the main reason to attend — but it's worth saying. Most owners are already paying someone for this paperwork. Do it yourself and that spend drops."></p>
+    </div>
+
+    <div class="math">
+      <div class="math-h">
+        <b class="i18n" data-te="ఒక సాధారణ business — నెలవారీ ఖర్చు" data-en="A typical small business — monthly spend"></b>
+        <span class="i18n" data-te="మీరు ఇప్పటికే పెడుతున్నా, పెట్టాలని ఆలోచిస్తున్నా — లెక్క ఇదే" data-en="Whether you already pay this or are about to — here's the maths"></span>
+      </div>
+      <div class="mrow">
+        <span class="mic">🧑‍💼</span>
+        <span class="mtx"><b class="i18n" data-te="Office assistant / back-office" data-en="Office assistant / back-office"></b><span class="i18n" data-te="Quotations, invoices, data entry, follow-up calls" data-en="Quotations, invoices, data entry, follow-up calls"></span></span>
+        <span class="mval">₹12,000</span>
+      </div>
+      <div class="mrow">
+        <span class="mic">📊</span>
+        <span class="mtx"><b class="i18n" data-te="CA / accountant — నెలవారీ పని" data-en="CA / accountant — monthly work"></b><span class="i18n" data-te="Records తయారీ, letters, reconciliation (filing కాదు)" data-en="Preparing records, letters, reconciliation (not the filing)"></span></span>
+        <span class="mval">₹3,000</span>
+      </div>
+      <div class="mrow">
+        <span class="mic">🎨</span>
+        <span class="mtx"><b class="i18n" data-te="Marketing — designer / content" data-en="Marketing — designer / content"></b><span class="i18n" data-te="Catalogue, offer posters, product descriptions" data-en="Catalogues, offer posters, product descriptions"></span></span>
+        <span class="mval">₹4,000</span>
+      </div>
+      <div class="mrow">
+        <span class="mic">📑</span>
+        <span class="mtx"><b class="i18n" data-te="అప్పుడప్పుడు వచ్చే ఖర్చులు" data-en="The occasional ones"></b><span class="i18n" data-te="Project report, legal notice, tender documents — నెలకు సగటున" data-en="Project reports, legal notices, tender documents — averaged monthly"></span></span>
+        <span class="mval">₹2,000</span>
+      </div>
+      <div class="mtot">
+        <b class="i18n" data-te="మొత్తం — ప్రతి నెలా, ప్రతి నెలా" data-en="Total — every single month"></b>
+        <span class="big">₹21,000</span>
+      </div>
+      <div class="mafter">
+        <div class="lbl i18n" data-te="ఈ 3 గంటల workshop తర్వాత" data-en="After this 3-hour workshop"></div>
+        <div class="big i18n" data-te="₹199 + రోజుకు 20 నిమిషాలు" data-en="₹199 + 20 minutes a day"></div>
+        <p class="i18n" data-te="ఈ పనుల్లో చాలా వరకు మీరే చేసుకుంటారు. మొదటి నెలలోనే ₹199 తిరిగి వచ్చేస్తుంది." data-en="You take on most of this yourself. The ₹199 comes back in the first month."></p>
+      </div>
+    </div>
+
+    <p class="math-note i18n"
+      data-te="ఇది ఒక ఉదాహరణ లెక్క — హామీ కాదు. మీ business పరిమాణం, మీరు ఇప్పుడు పెడుతున్న ఖర్చును బట్టి ఈ మొత్తం మారుతుంది. ముఖ్య గమనిక: GST filing, audit వంటి చట్టపరమైన పనులు మీ CA చేయాల్సిందే — వాటిని మానెయ్యమని మేము చెప్పట్లేదు."
+      data-en="This is an illustrative calculation, not a guarantee — your number depends on your business size and current spend. Important: statutory work like GST filing and audit must still be done by your CA. We are not telling you to stop using one."></p>
+  </div>
+</section>
+
+<!-- CTA 2 -->
+<div class="ctablock">
+  <div class="wrap">
+    <div class="cta-in">
+      <div class="cta-txt">
+        <b class="i18n" data-te="ఇంకెన్నాళ్ళు &quot;నాకు తెలియదు&quot; అని ఆగిపోతారు?" data-en="How much longer will &quot;I don't know how&quot; hold you back?"></b>
+        <span class="i18n" data-te="ఒక ఆదివారం ఉదయం. ₹199. అంతే — తెలియనిది తెలుస్తుంది." data-en="One Sunday morning and ₹199. That's the whole gap."></span>
+      </div>
+      <a href="#reg" class="btn i18n" data-te="ఇప్పుడే register చేయండి →" data-en="Register now →"></a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= WHO FOR ================= -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="ముందే చెప్తున్నాం" data-en="Straight talk"></div>
+      <h2 class="i18n" data-te="ఈ workshop అందరికీ కాదు" data-en="This workshop isn't for everyone"></h2>
+      <p class="i18n" data-te="₹199 చిన్న మొత్తమే. కానీ మీ 3 గంటలు చిన్నవి కావు. ముందే చూసుకోండి." data-en="₹199 is small. Your 3 hours are not. Check before you book."></p>
+    </div>
+    <div class="who-grid">
+      <div class="who">
+        <h3><span>✅</span><span class="i18n" data-te="మీకు ఇది సరిపోతుంది" data-en="This is for you"></span></h3>
+        <ul>
+          <li><span class="mk y">✓</span><span class="i18n" data-te="మీరు ఒక business నడుపుతున్నారు — manufacturing, trading, services, retail" data-en="You run a business — manufacturing, trading, services or retail"></span></li>
+          <li><span class="mk y">✓</span><span class="i18n" data-te="Quotations, payment follow-ups, letters — అన్నీ మీరే చేస్తున్నారు" data-en="Quotations, payment follow-ups and letters all land on you"></span></li>
+          <li><span class="mk y">✓</span><span class="i18n" data-te="English లో రాయడం, corporate buyers తో deal చెయ్యడం కష్టం" data-en="Writing in English or dealing with corporate buyers is a struggle"></span></li>
+          <li><span class="mk y">✓</span><span class="i18n" data-te="ఇంకో staff ను పెట్టుకోవాలా వద్దా అని ఆలోచిస్తున్నారు" data-en="You're weighing up hiring one more person"></span></li>
+          <li><span class="mk y">✓</span><span class="i18n" data-te="Tenders, schemes, loans — ఉన్నాయని తెలుసు, ఎలా అనేది తెలియదు" data-en="You know tenders, schemes and loans exist — just not how to go after them"></span></li>
+        </ul>
+      </div>
+      <div class="who">
+        <h3><span>❌</span><span class="i18n" data-te="మీకు ఇది సరిపోదు" data-en="This is not for you"></span></h3>
+        <ul>
+          <li><span class="mk n">✕</span><span class="i18n" data-te="మీరు ఇప్పటికే ChatGPT ను రోజూ పనికి వాడుతున్నారు" data-en="You already use ChatGPT for work every day"></span></li>
+          <li><span class="mk n">✕</span><span class="i18n" data-te="Coding లేదా technical AI training కోసం చూస్తున్నారు" data-en="You want coding or technical AI training"></span></li>
+          <li><span class="mk n">✕</span><span class="i18n" data-te="&quot;కూర్చోకుండా డబ్బు రావాలి&quot; అనే scheme కోసం వచ్చారు" data-en="You came looking for a get-rich-quick scheme"></span></li>
+          <li><span class="mk n">✕</span><span class="i18n" data-te="CA, advocate అవసరం లేకుండా అన్నీ AI చేసేస్తుందని ఆశిస్తున్నారు" data-en="You expect AI to replace your CA and advocate entirely"></span></li>
+          <li><span class="mk n">✕</span><span class="i18n" data-te="Live కి రాలేరు — recording కోసం చూస్తున్నారు" data-en="You can't attend live and just want the recording"></span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STACK ================= -->
+<section class="tint">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="₹199 తో ఏం వస్తుంది" data-en="What ₹199 gets you"></div>
+      <h2 class="i18n" data-te="Workshop ఒక్కటే కాదు. ఇంటికి తీసుకెళ్ళే వస్తువులు కూడా." data-en="Not just the workshop. Things you take home."></h2>
+    </div>
+
+    <div class="offer">
+      <div class="offer-head">
+        <h3 class="i18n" data-te="Live Workshop + 4 Bonus" data-en="Live workshop + 4 bonuses"></h3>
+        <p class="i18n" data-te="3 గంటలు · పూర్తిగా తెలుగులో · Zoom లో" data-en="3 hours · fully in Telugu · on Zoom"></p>
+      </div>
+      <ul class="stack">
+        <li><span class="sn">1</span><span class="sb"><b class="i18n" data-te="3 గంటల Live Workshop (తెలుగులో)" data-en="The 3-hour live workshop, in Telugu"></b><span class="i18n" data-te="8 modules, live demo, మధ్యలో మీ ప్రశ్నలకు సమాధానాలు." data-en="8 modules, live demos, your questions answered as we go."></span></span><span class="val">₹1,999</span></li>
+        <li><span class="sn">2</span><span class="sb"><b class="i18n" data-te="Business Prompt Book — 100+ prompts" data-en="Business prompt book — 100+ prompts"></b><span class="i18n" data-te="Quotation, payment reminder, legal notice, tender letter, project report — copy చేసి వాడుకోండి." data-en="Quotations, payment reminders, legal notices, tender letters, project reports — copy and use."></span></span><span class="val">₹2,500</span></li>
+        <li><span class="sn">3</span><span class="sb"><b class="i18n" data-te="Business Document Template Pack" data-en="Business document template pack"></b><span class="i18n" data-te="Quotation, proforma, invoice, delivery challan, payment reminder ladder — ready formats." data-en="Quotation, proforma, invoice, delivery challan, payment-reminder ladder — ready formats."></span></span><span class="val">₹1,500</span></li>
+        <li><span class="sn">4</span><span class="sb"><b class="i18n" data-te="ఉచిత AI Tools జాబితా" data-en="The free-tools list"></b><span class="i18n" data-te="ఏ tool ఉచితం, ఏది డబ్బు కట్టాలి, మీ business కి ఏది చాలు — స్పష్టంగా." data-en="Which tools are free, which cost money, and which one is enough for you."></span></span><span class="val">₹1,000</span></li>
+        <li><span class="sn">5</span><span class="sb"><b class="i18n" data-te="Certificate + 30 రోజుల WhatsApp Support Group" data-en="Certificate + 30-day WhatsApp support group"></b><span class="i18n" data-te="Workshop తర్వాత ఎక్కడైనా ఆగిపోతే అడగడానికి — నెల రోజులు." data-en="Somewhere to ask when you get stuck afterwards — for a full month."></span></span><span class="val">₹2,000</span></li>
+      </ul>
+      <div class="offer-foot">
+        <div class="price-old i18n" data-te="మొత్తం విలువ ₹9,000" data-en="Total value ₹9,000"></div>
+        <div class="price-new">₹199</div>
+        <p class="price-note i18n"
+          data-te="ఈ batch కి seats పరిమితం. నిండిపోయాక registration ఆగిపోతుంది."
+          data-en="Seats for this batch are limited. Registration closes once they are gone."></p>
+        <a href="#reg" class="btn btn-full">
+          <span class="i18n" data-te="₹199 కి నా seat book చేయండి →" data-en="Book my seat for ₹199 →"></span>
+          <small class="i18n" data-te="Seats అయిపోతే registration ఆగిపోతుంది" data-en="Registration closes when seats run out"></small>
+        </a>
+        <div class="slots i18n" data-te="⚡ ఈ batch లో 82% seats నిండాయి" data-en="⚡ This batch is 82% full"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WHAT HAPPENS NEXT ================= -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="Register చేశాక" data-en="After you register"></div>
+      <h2 class="i18n" data-te="తర్వాత ఏం జరుగుతుంది" data-en="Exactly what happens next"></h2>
+      <p class="i18n" data-te="మీరు ఏమీ వెతుక్కోవాల్సిన అవసరం లేదు. అంతా మీ WhatsApp కే వస్తుంది." data-en="Nothing to hunt for. It all comes to your WhatsApp."></p>
+    </div>
+    <div class="steps">
+      <div class="stp">
+        <div class="sn">1</div>
+        <b class="i18n" data-te="వెంటనే confirmation" data-en="Instant confirmation"></b>
+        <p class="i18n" data-te="Payment అయిన క్షణమే మీ WhatsApp కి confirmation message వస్తుంది." data-en="The moment your payment goes through, a confirmation lands on your WhatsApp."></p>
+      </div>
+      <div class="stp">
+        <div class="sn">2</div>
+        <b class="i18n" data-te="ముందు రోజు Zoom link" data-en="Zoom link the day before"></b>
+        <p class="i18n" data-te="Workshop కి ముందు రోజు, మళ్ళీ ఒక గంట ముందు — link అదే WhatsApp కే." data-en="The day before, and again an hour before — the link comes to that same WhatsApp."></p>
+      </div>
+      <div class="stp">
+        <div class="sn">3</div>
+        <b class="i18n" data-te="Workshop + bonus files" data-en="Workshop, then your files"></b>
+        <p class="i18n" data-te="3 గంటలు live. అయిన వెంటనే prompt book, templates, certificate మీకు వస్తాయి." data-en="3 hours live. Straight after, the prompt book, templates and certificate are yours."></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TRAINER ================= -->
+<section class="dark">
+  <div class="wrap narrow founder">
+    <div class="f-photo"><img src="santhosh.jpg" alt="Santhosh Nimmani"></div>
+    <div>
+      <h3>Santhosh Nimmani</h3>
+      <div class="role i18n" data-te="AI &amp; Software · Business Trainer · TEDx Speaker" data-en="AI &amp; Software · Business Trainer · TEDx Speaker"></div>
+      <div class="creds">
+        <span class="i18n" data-te="👥 100+ business owners" data-en="👥 100+ business owners"></span>
+        <span class="i18n" data-te="💻 Software &amp; AI background" data-en="💻 Software &amp; AI background"></span>
+        <span class="i18n" data-te="🏢 Business &amp; Corporate Trainer" data-en="🏢 Business &amp; corporate trainer"></span>
+        <span class="i18n" data-te="🎤 TEDx Speaker" data-en="🎤 TEDx Speaker"></span>
+        <span class="i18n" data-te="📕 Amazon #1 Bestselling Author" data-en="📕 Amazon #1 Bestselling Author"></span>
+      </div>
+
+      <p class="i18n"
+        data-te="నా background <b>software</b>. కొన్నేళ్ళు IT రంగంలో పనిచేశాను. ఇప్పుడు businesses కోసం <b>AI agents, automation systems</b> తయారు చేస్తున్నాను — customer calls, WhatsApp messages, appointments, follow-ups చూసుకునేవి."
+        data-en="My background is <b>software</b>. I spent years in IT, and today I build <b>AI agents and automation systems</b> for businesses — the kind that handle customer calls, WhatsApp messages, appointments and follow-ups."></p>
+
+      <p class="i18n"
+        data-te="అదే సమయంలో training ఇవ్వడం నా పని. Corporate teams కి, colleges లో, business owners కి — వ్యాపారం, leadership, ఇప్పుడు AI మీద. TEDx వేదిక మీద మాట్లాడాను, Amazon లో <b>#1 bestselling author</b> ని."
+        data-en="Alongside that, training is what I do — corporate teams, colleges and business owners, on business, leadership and now AI. I've spoken on a TEDx stage and I'm an <b>Amazon #1 bestselling author</b>."></p>
+
+      <p class="i18n"
+        data-te="ఇప్పటివరకు <b>100+ business owners</b> తో నేరుగా పనిచేశాను — వాళ్ళ business లో AI ను ఎక్కడ, ఎలా వాడాలో చూపించాను. ఆ 100+ మందితో పనిచేస్తూ ఒక విషయం స్పష్టమైంది: <b>చాలామందికి పెద్ద AI system అవసరం లేదు. ఇప్పటికే ఉన్న ఉచిత tools ను ఎలా వాడాలో తెలిస్తే చాలు.</b>"
+        data-en="I've now worked directly with <b>100+ business owners</b>, showing them where and how AI actually fits into their business. Doing that made one thing obvious: <b>most don't need a big AI system. They just need to know how to use the free tools that already exist.</b>"></p>
+
+      <p class="i18n"
+        data-te="కానీ అది తెలుగులో ఎవరూ సూటిగా చెప్పట్లేదు. అందుకే ఈ workshop. <b>నేనే స్వయంగా నడిపిస్తాను</b> — recorded video కాదు, ఇంకెవరో కాదు."
+        data-en="But nobody explains that plainly in Telugu. That's why this workshop exists. <b>I run it myself</b> — not a recording, not someone else."></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TESTIMONIALS ================= -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="వాళ్ళ మాటల్లోనే" data-en="In their own words"></div>
+      <h2 class="i18n" data-te="వాళ్ళూ మీలాగే &quot;ఇది మనకి కాదు&quot; అనుకున్నారు" data-en="They also thought &quot;this isn't for us&quot;"></h2>
+    </div>
+
+    <!-- social-proof count, repeated from the trainer section (reference page does this twice) -->
+    <div class="proof-strip">
+      <b>100+</b>
+      <span class="i18n" data-te="business owners తో ఇప్పటివరకు నేరుగా పనిచేశాను" data-en="business owners worked with directly so far"></span>
+    </div>
+
+    <!-- ⚠ HIDE THE WHOLE SECTION until you have real reviews.
+         Easiest: add style="display:none" to the <section> tag above.
+         Then paste real ones in, delete this banner and the three
+         <span class="smp"> tags, and remove the display:none.
+         Do NOT invent reviews — fake published reviews are prohibited under
+         BIS IS 19000:2022 / CCPA guidelines and the Consumer Protection Act. -->
+    <div class="sample-warn i18n"
+      data-te="⚠ ఇవి ఖాళీ నమూనాలు — design ఎలా ఉంటుందో చూపించడానికి మాత్రమే. నిజమైన attendee reviews వచ్చే వరకు ఈ section మొత్తం దాచిపెట్టండి (section tag కి style=&quot;display:none&quot; పెట్టండి)."
+      data-en="⚠ These are empty placeholders showing the layout only. Hide this whole section (add style=&quot;display:none&quot; to the section tag) until you have real attendee reviews to paste in."></div>
+
+    <div class="tst-grid">
+      <div class="tst">
+        <span class="smp">PLACEHOLDER</span>
+        <div class="tst-av" style="background:#1A73E8">R</div>
+        <div>
+          <div class="tst-top">
+            <b class="i18n" data-te="[Attendee పేరు]" data-en="[Attendee name]"></b>
+            <span class="meta i18n" data-te="[Business · ఊరు]" data-en="[Business · town]"></span>
+          </div>
+          <div class="tst-rate">
+            <span class="stars">★★★★★</span>
+            <span class="tst-when i18n" data-te="[ఎప్పుడు]" data-en="[when]"></span>
+          </div>
+          <q class="i18n"
+            data-te="[ఇక్కడ నిజమైన attendee review పెట్టండి. మంచి review లో 3 భాగాలు ఉంటాయి — <b>1)</b> ముందు ఏ సమస్య ఉండేది, <b>2)</b> workshop లో ఏం చేశారు, <b>3)</b> ఫలితం ఒక సంఖ్యతో. ఉదా: ఎన్ని రోజుల్లో payment వచ్చింది, ఎంత సమయం ఆదా అయ్యింది.]"
+            data-en="[Paste a real attendee review here. A strong one has three parts — <b>1)</b> the problem before, <b>2)</b> what they did in the workshop, <b>3)</b> the result, with a number. E.g. days taken to recover a payment, hours saved per week.]"></q>
+        </div>
+      </div>
+
+      <div class="tst">
+        <span class="smp">PLACEHOLDER</span>
+        <div class="tst-av" style="background:#E8710A">P</div>
+        <div>
+          <div class="tst-top">
+            <b class="i18n" data-te="[Attendee పేరు]" data-en="[Attendee name]"></b>
+            <span class="meta i18n" data-te="[Business · ఊరు]" data-en="[Business · town]"></span>
+          </div>
+          <div class="tst-rate">
+            <span class="stars">★★★★★</span>
+            <span class="tst-when i18n" data-te="[ఎప్పుడు]" data-en="[when]"></span>
+          </div>
+          <q class="i18n"
+            data-te="[రెండో review. వీలైతే English / quotation ఇబ్బంది గురించి ఉన్నది ఎంచుకోండి — చాలామందికి అదే సమస్య. వాళ్ళ సొంత మాటలు మార్చకండి; తెలుగు-English కలిపి మాట్లాడితే అలాగే ఉంచండి, అదే నిజంగా అనిపిస్తుంది.]"
+            data-en="[Second review. If you have one about the English / quotation struggle, use it — that is the most common problem. Do not clean up their words; if they mix Telugu and English, leave it, that is what makes it read as real.]"></q>
+        </div>
+      </div>
+
+      <div class="tst">
+        <span class="smp">PLACEHOLDER</span>
+        <div class="tst-av" style="background:#137333">S</div>
+        <div>
+          <div class="tst-top">
+            <b class="i18n" data-te="[Attendee పేరు]" data-en="[Attendee name]"></b>
+            <span class="meta i18n" data-te="[Business · ఊరు]" data-en="[Business · town]"></span>
+          </div>
+          <div class="tst-rate">
+            <span class="stars">★★★★★</span>
+            <span class="tst-when i18n" data-te="[ఎప్పుడు]" data-en="[when]"></span>
+          </div>
+          <q class="i18n"
+            data-te="[మూడో review. &quot;నాకు computer రాదు&quot; అనుకున్న వ్యక్తి నుంచి ఒకటి ఉంటే ఇక్కడ పెట్టండి — మీ page లో అదే అతి పెద్ద అభ్యంతరం, దాన్ని ఇదే బాగా తీరుస్తుంది. వాళ్ళ వయసు చెప్పమని అడగండి.]"
+            data-en="[Third review. If you have one from someone who thought &quot;I am not a computer person&quot;, put it here — that is the biggest objection on this page and this answers it best. Ask them to mention their age.]"></q>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="tint">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow i18n" data-te="సందేహాలు" data-en="Questions"></div>
+      <h2 class="i18n" data-te="మీరు అడగాలనుకుంటున్న ప్రశ్నలు" data-en="The questions you're already thinking"></h2>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary class="i18n" data-te="నాకు computer రాదు. నేను నేర్చుకోగలనా?" data-en="I don't know computers. Can I still learn this?"></summary>
+        <p class="i18n" data-te="ఖచ్చితంగా. ఈ workshop మొత్తం phone లోనే చేసేలా తయారు చేశాం. WhatsApp వాడగలిగితే ఇది కూడా వాడగలరు. Typing కూడా అవసరం లేదు — తెలుగులో మాట్లాడితే చాలు." data-en="Absolutely. The whole workshop is built to be done on a phone. If you can use WhatsApp, you can do this. You don't even need to type — just speak in Telugu."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="నా CA ని వదిలేయమని చెప్తున్నారా?" data-en="Are you telling me to stop using my CA?"></summary>
+        <p class="i18n" data-te="ఖచ్చితంగా కాదు. GST filing, audit, ROC — ఇవి చట్టపరమైన పనులు, మీ CA చేయాల్సిందే. మేము నేర్పేది వేరే: notice లో ఏముందో మీకు వెంటనే అర్థమవ్వడం, letters మీరే రాసుకోవడం, records ముందే తయారు చేసి CA కి ఇవ్వడం. AI draft చేసిన ఏ document అయినా CA లేదా advocate చేత చూపించుకోవడం మంచిది." data-en="Definitely not. GST filing, audit and ROC work are statutory — your CA must do them. What we teach is different: understanding a notice the moment it arrives, writing your own letters, and preparing records before handing them over. Any AI-drafted document should still be checked by your CA or advocate."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="₹199 మాత్రమేనా? దాచిన charges ఏమైనా ఉన్నాయా?" data-en="Is it really just ₹199? Any hidden charges?"></summary>
+        <p class="i18n" data-te="₹199 మాత్రమే. ఇంకేమీ లేదు. Workshop లో నేర్పే tools చాలావరకు ఉచితంగా వాడుకోవచ్చు — ఏవి ఉచితం, ఏవి కావో బోనస్ list లో స్పష్టంగా ఇచ్చాం." data-en="₹199 and nothing else. Most tools we teach can be used free — the bonus list spells out which are free and which aren't."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="Recording ఇస్తారా? నేను live కి రాలేకపోతే?" data-en="Will I get a recording if I can't attend live?"></summary>
+        <p class="i18n" data-te="Recording ఇవ్వము. ఇది చూసే class కాదు — చేసే class. మేము చూపిస్తాం, మీరు అదే క్షణంలో మీ phone లో చేస్తారు, ఆగిపోతే అడుగుతారు. అందుకే live కి రాగలిగితేనే register చేయండి. తేదీ ముందే తెలుసు — ఆ 3 గంటలు ఇప్పుడే calendar లో పెట్టుకోండి." data-en="No recording. This isn't a class you watch, it's one you do. We show you, you do it on your phone in that moment, and you ask when you're stuck. So register only if you can be there live. You know the date already — block those 3 hours now."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="నేను ఒకసారి ChatGPT try చేశాను. ఏమీ ఉపయోగపడలేదు." data-en="I tried ChatGPT once. It wasn't useful."></summary>
+        <p class="i18n" data-te="చాలామందికి ఇదే అనుభవం — అది మీ తప్పు కాదు. ఏం అడగాలో తెలియకపోతే సరైన సమాధానం రాదు. Workshop లో మేము నేర్పేది అదే: మీ business పని కోసం <b>ఎలా అడగాలి</b> అనేది. అదే తేడా. Bonus లో ఇచ్చే 100+ prompt book అందుకే — copy చేసి వాడుకోవచ్చు." data-en="That's most people's experience, and it isn't your fault. If you don't know what to ask, you don't get a useful answer. What we teach is exactly that — <b>how to ask</b> for your kind of work. That's the whole difference. It's also why the bonus prompt book exists: 100+ ready prompts you can copy and use."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="ఈ 3 గంటల తర్వాత నిజంగా డబ్బు మిగులుతుందా?" data-en="Will I really save money after these 3 hours?"></summary>
+        <p class="i18n" data-te="నిజాయితీగా చెప్తాం — ఇది మీ మీద ఆధారపడి ఉంటుంది. మీరు ఇప్పుడు assistant కి, designer కి, consultant కి డబ్బు పెడుతున్నట్టయితే ఆ ఖర్చు నిజంగా తగ్గుతుంది. కానీ నేర్చుకున్నది వాడకపోతే ఏమీ ఆదా కాదు. మేము నేర్పుతాం; వాడాల్సింది మీరే." data-en="Honestly — it depends on you. If you're currently paying an assistant, a designer or a consultant, that spend genuinely drops. But if you never use what you learn, you save nothing. We teach it; you have to use it."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="ఇది ఏదైనా పెద్ద course అమ్మడానికి పెట్టిన webinar కాదు కదా?" data-en="Is this just a webinar to sell me an expensive course?"></summary>
+        <p class="i18n" data-te="కాదు. 3 గంటలూ నేర్పడానికే. చివర్లో మా company ఏం చేస్తుందో 5 నిమిషాలు చెప్తాం — ఎవరికైనా AI agent కావాలంటే. మీరు ఏమీ కొనకపోయినా workshop మొత్తం, bonus files అన్నీ మీవే." data-en="No. All 3 hours are teaching. At the end we spend 5 minutes on what our company does, in case anyone wants an AI agent built. Buy nothing and you still keep everything."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="నా business చాలా చిన్నది. నాకు పనికొస్తుందా?" data-en="My business is small. Is this for me?"></summary>
+        <p class="i18n" data-te="Business చిన్నదైతే ఇది ఇంకా ఎక్కువ పనికొస్తుంది. పెద్ద companies కి accounts team, marketing team ఉంటాయి. మీకు లేవు — అందుకే quotation నుంచి payment follow-up వరకు ప్రతి పనీ మీరే చేస్తున్నారు." data-en="If your business is small, this matters more, not less. Big companies have an accounts team and a marketing team. You don't — which is why everything from the quotation to the payment chase lands on you."></p>
+      </details>
+      <details>
+        <summary class="i18n" data-te="నచ్చకపోతే డబ్బు తిరిగి వస్తుందా?" data-en="What if I don't find it useful?"></summary>
+        <p class="i18n" data-te="Workshop అయిన 24 గంటల్లో మాకు WhatsApp లో ఒక్క message పంపండి. కారణం అడగము. ₹199 తిరిగి ఇచ్చేస్తాం — bonus files మాత్రం మీ దగ్గరే ఉంటాయి." data-en="Send us one WhatsApp message within 24 hours of the workshop. We won't ask why. You get the ₹199 back — and you keep the bonus files."></p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FINAL CTA + FORM ================= -->
+<section class="dark">
+  <div class="wrap final-grid">
+    <div class="final-l">
+      <div class="eyebrow i18n" data-te="చివరి అడుగు" data-en="Last step"></div>
+      <h2 class="i18n" data-te="&quot;అది మనలాంటి వాళ్ళకి కాదు&quot; — ఈ ఒక్క మాట మిమ్మల్ని ఎన్నేళ్ళు ఆపింది?" data-en="&quot;It's not for people like us&quot; — how many years has that one sentence cost you?"></h2>
+      <p class="i18n" data-te="ఒక ఆదివారం ఉదయం. ₹199. మీ phone. అంతే. Workshop అయ్యేసరికి — మీ business కి AI ఏం చేస్తుందో మీరే చేసి చూసి ఉంటారు." data-en="One Sunday morning. ₹199. Your phone. That's all. By the time it ends, you'll have done it yourself and seen what it does for your business."></p>
+      <ul>
+        <li><span class="tick">✓</span><span class="i18n" data-te="Live, తెలుగులో — recorded video కాదు" data-en="Live and in Telugu — not a recorded video"></span></li>
+        <li><span class="tick">✓</span><span class="i18n" data-te="Phone చాలు — laptop అవసరం లేదు" data-en="A phone is enough — no laptop needed"></span></li>
+        <li><span class="tick">✓</span><span class="i18n" data-te="నచ్చకపోతే 24 గంటల్లో డబ్బు తిరిగి" data-en="Full refund within 24 hours if it's not useful"></span></li>
+        <li><span class="tick">✓</span><span class="i18n" data-te="Prompt book, templates, certificate మీవే" data-en="Prompt book, templates and certificate are yours to keep"></span></li>
+      </ul>
+    </div>
+
+    <div class="regcard" style="position:static">
+      <div class="reg-h">
+        <div class="lbl i18n" data-te="Live AI Workshop — తెలుగు" data-en="Live AI Workshop — Telugu"></div>
+        <div class="amt"><span class="old">₹1,999</span><span class="new">₹199</span></div>
+        <div class="when" id="wdate3"></div>
+      </div>
+      <div class="reg-b">
+        <div class="h i18n" data-te="మీ seat ఇప్పుడే book చేయండి" data-en="Book your seat now"></div>
+        <form onsubmit="return register(event)">
+          <div class="field">
+            <label class="i18n" data-te="మీ పేరు" data-en="Your name"></label>
+            <input type="text" name="name" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label class="i18n" data-te="WhatsApp నంబర్" data-en="WhatsApp number"></label>
+            <input type="tel" name="phone" required pattern="[0-9+ ]{10,15}" placeholder="+91 " autocomplete="tel">
+          </div>
+          <div class="field">
+            <label class="i18n" data-te="మీ business" data-en="Your business"></label>
+            <select name="biz">
+              <option class="i18n" data-te="Manufacturing / Job work" data-en="Manufacturing / job work"></option>
+              <option class="i18n" data-te="Trading / Distribution" data-en="Trading / distribution"></option>
+              <option class="i18n" data-te="Retail / Kirana / Shop" data-en="Retail / kirana / shop"></option>
+              <option class="i18n" data-te="Contractor / Services" data-en="Contractor / services"></option>
+              <option class="i18n" data-te="Clinic / Hospital" data-en="Clinic / hospital"></option>
+              <option class="i18n" data-te="School / College / Institute" data-en="School / college / institute"></option>
+              <option class="i18n" data-te="ఇతరం" data-en="Other"></option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-full">
+            <span class="i18n" data-te="₹199 కట్టి seat confirm చేయండి →" data-en="Pay ₹199 and confirm my seat →"></span>
+            <small class="i18n" data-te="30 సెకన్లలో పూర్తవుతుంది" data-en="Takes 30 seconds"></small>
+          </button>
+        </form>
+        <div class="risk i18n"
+          data-te="మీ నంబర్ ఎవరికీ ఇవ్వము. Workshop విషయాలు తప్ప ఇంకే messages పంపము."
+          data-en="We never share your number. No messages except about the workshop."></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOTER (legal only) ================= -->
+<footer>
+  <div class="wrap">
+    <img src="sntg-logo.svg" alt="SN Trinetra Global AI &amp; IT Solutions" class="f-logo">
+    <div class="f-contact">
+      <span class="i18n" data-te="ఏదైనా సందేహం ఉంటే — " data-en="Any questions — "></span>
+      <a href="https://wa.me/91XXXXXXXXXX" target="_blank" rel="noopener">WhatsApp</a>
+      <span> · </span>
+      <a href="mailto:subns24@gmail.com">subns24@gmail.com</a>
+    </div>
+    <p class="disc i18n"
+      data-te="© 2026 SN Trinetra Global AI &amp; IT Solutions. ఈ పేజీలో చూపిన ₹20,000 / ₹21,000 వంటి మొత్తాలు ఒక ఉదాహరణ లెక్క మాత్రమే — ఇవి హామీ కాదు. ప్రతి వ్యక్తి ఫలితాలు వారి business, వారు నేర్చుకున్నది ఎంతవరకు వాడతారు అనే దాని మీద ఆధారపడి ఉంటాయి. ఇది ఒక విద్యాపరమైన workshop మాత్రమే — ఇది chartered accountant, advocate లేదా financial advisor సలహాకు ప్రత్యామ్నాయం కాదు. GST filing, audit వంటి చట్టపరమైన పనులు అర్హత కలిగిన professional చేతనే చేయించుకోండి; AI తయారు చేసిన ఏ document అయినా పంపే ముందు వారి చేత పరిశీలించుకోండి. Bonus items విలువ సూచనాత్మకం. Facebook / Meta కి ఈ పేజీతో ఎటువంటి సంబంధం లేదు, దీన్ని వారు ఆమోదించలేదు."
+      data-en="© 2026 SN Trinetra Global AI &amp; IT Solutions. The ₹20,000 / ₹21,000 figures on this page are an illustrative calculation, not a guarantee. Individual results depend on your business and how much of the training you apply. This is an educational workshop only and is not a substitute for advice from a chartered accountant, advocate or financial advisor. Statutory work such as GST filing and audit should be handled by a qualified professional, and any AI-drafted document should be reviewed by one before you send it. Bonus values are indicative. This site is not affiliated with or endorsed by Facebook / Meta."></p>
+  </div>
+</footer>
+
+<!-- ================= STICKY ================= -->
+<div class="sticky">
+  <div class="sticky-l">
+    <b><s>₹1,999</s>₹199</b>
+    <span class="i18n" data-te="82% seats నిండాయి" data-en="82% of seats gone"></span>
+  </div>
+  <a href="#reg" class="btn i18n" data-te="Seat book చేయండి →" data-en="Book my seat →"></a>
+</div>
+
+<!-- ================= URGENCY POPUP ================= -->
+<div class="pop-ov" id="pop" role="dialog" aria-modal="true" aria-labelledby="pop-title">
+  <div class="pop">
+    <button class="pop-x" onclick="closePop('x')" aria-label="Close">✕</button>
+    <div class="pop-h">
+      <b id="pop-title" class="i18n"
+        data-te="<em>ఆగండి!</em> వెళ్ళే ముందు ఒక్క నిమిషం."
+        data-en="<em>HEY, WAIT!</em> One minute before you go."></b>
+    </div>
+    <div class="pop-b">
+      <p class="lead i18n"
+        data-te="ఇప్పుడు వెళ్ళిపోతే — <u>₹9,000 విలువైన bonus లు</u> మరియు <u>₹199 ధర</u> రెండూ పోతాయి."
+        data-en="Leave now and you lose both — <u>₹9,000 of bonuses</u> and the <u>₹199 price</u>."></p>
+      <p class="sub i18n"
+        data-te="ఈ batch లో ఇప్పటికే <b>82% seats</b> నిండాయి. Workshop <b id='pop-when'></b>."
+        data-en="This batch is already <b>82% full</b>. The workshop is on <b id='pop-when'></b>."></p>
+
+      <ul class="pop-list">
+        <li><span class="pk">✓</span><span class="i18n" data-te="<b>3 గంటల live workshop</b> — పూర్తిగా తెలుగులో" data-en="<b>3-hour live workshop</b> — fully in Telugu"></span></li>
+        <li><span class="pk">✓</span><span class="i18n" data-te="<b>100+ prompt book</b> + document templates" data-en="<b>100+ prompt book</b> + document templates"></span></li>
+        <li><span class="pk">✓</span><span class="i18n" data-te="<b>Certificate</b> + 30 రోజుల WhatsApp support" data-en="<b>Certificate</b> + 30-day WhatsApp support"></span></li>
+        <li><span class="pk">✓</span><span class="i18n" data-te="నచ్చకపోతే <b>24 గంటల్లో డబ్బు తిరిగి</b>" data-en="<b>Full refund within 24 hours</b> if it's not useful"></span></li>
+      </ul>
+
+      <div class="pop-price"><s>₹1,999</s><strong>₹199</strong></div>
+
+      <a href="#reg" class="btn" onclick="closePop('cta')">
+        <span class="i18n" data-te="సరే, నా seat book చేస్తాను →" data-en="OK, book my seat →"></span>
+        <small class="i18n" data-te="30 సెకన్లలో పూర్తవుతుంది" data-en="Takes 30 seconds"></small>
+      </a>
+      <button class="pop-no i18n" onclick="closePop('no')"
+        data-te="వద్దు, తర్వాత చూస్తాను" data-en="No thanks, I'll look later"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================
+   CONFIG — change these before running ads
+   ======================================================= */
+const WHATSAPP_NUMBER = "91XXXXXXXXXX";  // your number, no + and no spaces
+const PAYMENT_LINK    = "";              // Razorpay/UPI link. Empty = lead goes to WhatsApp only.
+
+/* Workshop date. Empty = auto-roll to the next Sunday 11 AM so the page
+   never shows a date that has passed. Pin a batch: "2026-08-30T11:00:00+05:30" */
+const WORKSHOP_DATE = "2026-11-14T11:00:00+05:30";
+const AUTO_DAY = 0;    // 0 = Sunday
+const AUTO_HOUR = 11;  // 11 AM
+
+/* The ₹199 offer deadline shown in the top bar. Leave empty and it is the
+   night before the workshop (23:59), i.e. when registration actually closes.
+   Keep it a REAL deadline — a timer that resets while the price never moves
+   is a false claim, and this audience checks.                               */
+const OFFER_ENDS = "";
+
+function workshopAt(){
+  if(WORKSHOP_DATE) return new Date(WORKSHOP_DATE);
+  const d = new Date();
+  d.setHours(AUTO_HOUR,0,0,0);
+  let add = (AUTO_DAY - d.getDay() + 7) % 7;
+  if(add === 0 && Date.now() > d.getTime()) add = 7;
+  d.setDate(d.getDate() + add);
+  return d;
+}
+const WDATE = workshopAt();
+
+/* ---------- LANGUAGE ---------- */
+const DAYS_TE = ['ఆదివారం','సోమవారం','మంగళవారం','బుధవారం','గురువారం','శుక్రవారం','శనివారం'];
+const MON_TE  = ['జనవరి','ఫిబ్రవరి','మార్చి','ఏప్రిల్','మే','జూన్','జూలై','ఆగస్టు','సెప్టెంబర్','అక్టోబర్','నవంబర్','డిసెంబర్'];
+
+function dateLabel(l){
+  const h = WDATE.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = ((h + 11) % 12) + 1;
+  if(l === 'te'){
+    const part = h < 12 ? 'ఉదయం' : (h < 16 ? 'మధ్యాహ్నం' : 'సాయంత్రం');
+    return `${WDATE.getDate()} ${MON_TE[WDATE.getMonth()]}, ${DAYS_TE[WDATE.getDay()]} · ${part} ${h12} గంటలకు`;
+  }
+  return WDATE.toLocaleDateString('en-IN',{day:'numeric',month:'long',weekday:'long'}) + ` · ${h12}:00 ${ampm}`;
+}
+
+function setLang(l){
+  document.documentElement.lang = l;
+  document.body.classList.toggle('lang-en', l === 'en');
+  document.querySelectorAll('.i18n').forEach(el=>{
+    const v = el.getAttribute('data-' + l);
+    if(v !== null) el.innerHTML = v;
+  });
+  const lbl = dateLabel(l);
+  ['wdate','wdate2','wdate3','pop-when'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = lbl;
+  });
+  document.getElementById('btn-te').classList.toggle('on', l === 'te');
+  document.getElementById('btn-en').classList.toggle('on', l === 'en');
+  try{ localStorage.setItem('sntg_lang', l); }catch(e){}
+}
+setLang((()=>{ try{ return localStorage.getItem('sntg_lang') || 'te'; }catch(e){ return 'te'; } })());
+
+/* ---------- COUNTDOWN (to the ₹199 offer deadline) ---------- */
+const OFFER_DEADLINE = (function(){
+  if(OFFER_ENDS) return new Date(OFFER_ENDS);
+  const d = new Date(WDATE);          // night before the workshop
+  d.setDate(d.getDate() - 1);
+  d.setHours(23,59,0,0);
+  return d;
+})();
+
+(function(){
+  const el = document.getElementById('clock');
+  function tick(){
+    let s = Math.max(0, Math.floor((OFFER_DEADLINE - Date.now())/1000));
+    const d = Math.floor(s/86400); s -= d*86400;
+    const h = String(Math.floor(s/3600)).padStart(2,'0');
+    const m = String(Math.floor(s%3600/60)).padStart(2,'0');
+    const c = String(s%60).padStart(2,'0');
+    el.textContent = (d > 0 ? d + 'd ' : '') + `${h}:${m}:${c}`;
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+/* =======================================================
+   URGENCY POPUP — fires on a 2-minute timer, and on
+   desktop exit-intent. Shows at most once per session.
+   Set POPUP_DELAY to 0 to disable the timer trigger.
+   ======================================================= */
+const POPUP_DELAY = 120;   // seconds on page before it fires
+
+(function(){
+  const ov = document.getElementById('pop');
+  if(!ov) return;
+  let shown = false, timer = null;
+
+  const seen = () => { try{ return sessionStorage.getItem('sntg_pop') === '1'; }catch(e){ return false; } };
+  const mark = () => { try{ sessionStorage.setItem('sntg_pop','1'); }catch(e){} };
+
+  function canShow(){
+    if(shown || seen()) return false;
+    // don't interrupt someone already filling the form or already registered
+    if(document.activeElement && document.activeElement.closest && document.activeElement.closest('form')) return false;
+    try{ if(sessionStorage.getItem('sntg_registered') === '1') return false; }catch(e){}
+    return true;
+  }
+
+  function open(){
+    if(!canShow()) return;
+    shown = true; mark();
+    ov.classList.add('on');
+    document.body.style.overflow = 'hidden';
+    const btn = ov.querySelector('.btn');
+    if(btn) btn.focus({preventScroll:true});
+  }
+
+  window.closePop = function(){
+    ov.classList.remove('on');
+    document.body.style.overflow = '';
+    if(timer){ clearTimeout(timer); timer = null; }
+  };
+
+  // 1) time on page
+  if(POPUP_DELAY > 0) timer = setTimeout(open, POPUP_DELAY * 1000);
+
+  // 2) desktop exit-intent — pointer leaves through the top of the window
+  document.addEventListener('mouseout', function(e){
+    if(e.relatedTarget || e.toElement) return;
+    if(e.clientY > 6) return;
+    open();
+  });
+
+  // dismissals
+  ov.addEventListener('click', function(e){ if(e.target === ov) closePop(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && ov.classList.contains('on')) closePop(); });
+})();
+
+/* ---------- REGISTER (works for every form on the page) ---------- */
+function register(e){
+  e.preventDefault();
+  try{ sessionStorage.setItem('sntg_registered','1'); }catch(err){}
+  if(typeof closePop === 'function') closePop();
+  const f = e.target;
+  const g = n => ((f.elements[n] && f.elements[n].value) || '').trim();
+  const te = document.documentElement.lang === 'te';
+  const msg = te
+    ? `నమస్కారం 🙏 AI Workshop (₹199) కి register చేసుకోవాలి.\n\nపేరు: ${g('name')}\nWhatsApp: ${g('phone')}\nBusiness: ${g('biz')}`
+    : `Hi 🙏 I'd like to register for the ₹199 AI Workshop.\n\nName: ${g('name')}\nWhatsApp: ${g('phone')}\nBusiness: ${g('biz')}`;
+
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+  if(PAYMENT_LINK) window.location.href = PAYMENT_LINK;
+  return false;
+}
+</script>
+</body>
+</html>
