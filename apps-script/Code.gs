@@ -83,6 +83,7 @@ function onOpen() {
     SpreadsheetApp.getUi().createMenu('SNTG')
       .addItem('Send due messages now', 'runMessages')
       .addItem('Send all 4 test messages to me', 'sendTestToMe')
+      .addItem('Resend already-sent emails to all buyers', 'resendToAllBuyers')
       .addToUi();
   } catch (err) { /* not opened from the sheet */ }
 }
@@ -138,9 +139,14 @@ function recordPayment_(paymentId, payment, via, hint) {
     }
 
     const notes = p.notes || {};
-    const name  = notes.name || notes.full_name || notes.customer_name || (hint && hint.name) || '';
-    const email = p.email || notes.email || (hint && hint.email) || '';
-    const phone = p.contact || notes.phone || notes.whatsapp || (hint && hint.phone) || '';
+    let email = p.email || notes.email || (hint && hint.email) || '';
+    let phone = p.contact || notes.phone || notes.whatsapp || (hint && hint.phone) || '';
+    // The name typed on the website form wins; Razorpay's fields are the fallback.
+    const lead = findLead_(email, phone);
+    const name = (hint && hint.name) || (lead && lead.name) ||
+                 notes.name || notes.full_name || notes.customer_name || '';
+    email = email || (lead && lead.email) || '';
+    phone = phone || (lead && lead.phone) || '';
 
     sh.appendRow([
       new Date(p.created_at * 1000), p.id, p.amount / 100, clean_(name), clean_(email), clean_(phone),
@@ -185,6 +191,14 @@ function runMessages() {
       if (status !== 'captured' && status !== 'verified') continue;
       const buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || ''),
                       phone: String(r[COL.phone - 1] || '') };
+      if (!buyer.name || !buyer.email || !buyer.phone) {
+        const lead = findLead_(buyer.email, buyer.phone);
+        if (lead) {
+          [['name', COL.name], ['email', COL.email], ['phone', COL.phone]].forEach(([k, c]) => {
+            if (!buyer[k] && lead[k]) { buyer[k] = lead[k]; sh.getRange(i + 2, c).setValue(clean_(lead[k])); }
+          });
+        }
+      }
 
       for (const st of STAGES) {
         if (r[st.col - 1] !== '' || !st.due(now, start.getTime())) continue;
@@ -230,8 +244,12 @@ function sendStage_(key, buyer, s, start) {
 
 /** The four messages. Email HTML + the WhatsApp template name and its {{1}}, {{2}}… values. */
 function message_(key, b, s, start) {
-  const first = (b.name || '').split(' ')[0] || 'there';
-  const hi = '<p>నమస్కారం ' + escape_(b.name || '') + ' 🙏</p>';
+  const fullName = String(b.name || '').trim();
+  const first = fullName.split(/\s+/)[0] || 'there';
+  const hi = fullName
+    ? '<p>నమస్కారం <b>' + escape_(fullName) + '</b> గారు 🙏<br>Dear <b>' + escape_(fullName) + '</b>,</p>'
+    : '<p>నమస్కారం 🙏</p>';
+  const who = fullName ? fullName + ', ' : '';
   const when = Utilities.formatDate(start, 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a") + ' IST';
   const time = Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
   const button = (url, label, color) => '<p style="margin:22px 0"><a href="' + escape_(url) +
@@ -240,7 +258,7 @@ function message_(key, b, s, start) {
 
   switch (key) {
     case 'welcome': return {
-      subject: '🎉 Your registration is confirmed — ' + WORKSHOP_NAME,
+      subject: '🎉 ' + who + 'your registration is confirmed — ' + WORKSHOP_NAME,
       html: hi + '<p><b>Congratulations on taking your first steps!</b> Your registration is confirmed. ' +
             'Get ready for your transformation 🚀</p>' +
             '<p>📅 <b>' + escape_(when) + '</b><br>📱 Your phone is enough — no laptop needed.</p>' +
@@ -250,7 +268,7 @@ function message_(key, b, s, start) {
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
     };
     case 'reminder': return {
-      subject: '⏰ Tomorrow: ' + WORKSHOP_NAME,
+      subject: '⏰ ' + who + 'your workshop is tomorrow — ' + WORKSHOP_NAME,
       html: hi + '<p>A quick reminder — your workshop is <b>tomorrow</b>.</p>' +
             '<p>📅 <b>' + escape_(when) + '</b></p>' +
             '<p>Keep your phone charged and your internet on. The live link comes 1 hour before we start.</p>' +
@@ -258,14 +276,14 @@ function message_(key, b, s, start) {
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
     case 'live': return {
-      subject: '🔴 Starting at ' + time + ' — your live link',
+      subject: '🔴 ' + who + 'we start at ' + time + ' — your live link',
       html: hi + '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
             button(s.live, 'Join the live workshop', '#004AAD') +
             '<p style="color:#47576B">Link: ' + escape_(s.live) + '</p>',
       waTemplate: 'sntg_live_link', waParams: [first, time, s.live]
     };
     case 'thanks': return {
-      subject: '🙏 Thank you for joining — ' + WORKSHOP_NAME,
+      subject: '🙏 Thank you for joining, ' + (fullName || 'friend') + ' — ' + WORKSHOP_NAME,
       html: hi + '<p>Thank you for attending! We hope you are already using AI in your business.</p>' +
             (s.feedback ? '<p>Please share your feedback and get your bonus files here:</p>' +
                           button(s.feedback, 'Feedback & bonus files', '#004AAD') : '') +
@@ -302,6 +320,51 @@ function sendTestToMe() {
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, me, sTest, start));
   console.log(out.join('\n'));
   return out;
+}
+
+/**
+ * Finds what a buyer typed on the website (Leads tab), matching by email or by the
+ * last 10 digits of the phone number. The most recent matching entry wins.
+ */
+function findLead_(email, phone) {
+  const sh = ss_().getSheetByName(LEADS_SHEET);
+  if (!sh || sh.getLastRow() < 2) return null;
+  const e = String(email || '').trim().toLowerCase();
+  const ph = String(phone || '').replace(/\D/g, '').slice(-10);
+  if (!e && ph.length < 10) return null;
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues();   // time, name, whatsapp, email
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const rEmail = String(rows[i][3] || '').trim().toLowerCase();
+    const rPhone = String(rows[i][2] || '').replace(/\D/g, '').slice(-10);
+    if ((e && rEmail === e) || (ph.length === 10 && rPhone === ph)) {
+      return { name: String(rows[i][1] || '').trim(), phone: String(rows[i][2] || ''), email: String(rows[i][3] || '') };
+    }
+  }
+  return null;
+}
+
+/**
+ * Sends again every message a verified buyer has already received (now with their name),
+ * then stamps the new send time. Messages not yet due are left for their normal time.
+ * Run from the editor or the SNTG menu.
+ */
+function resendToAllBuyers() {
+  const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+  const last = sh.getLastRow();
+  if (last < 2) { console.log('No buyers yet.'); return 0; }
+  const rows = sh.getRange(2, 1, last - 1, PAYMENT_HEADERS.length).getValues();
+  let cleared = 0;
+  rows.forEach((r, i) => {
+    const status = String(r[COL.status - 1]).trim().toLowerCase();
+    if (status !== 'captured' && status !== 'verified') return;
+    STAGES.forEach(st => {
+      if (r[st.col - 1] !== '') { sh.getRange(i + 2, st.col).setValue(''); cleared++; }
+    });
+  });
+  SpreadsheetApp.flush();
+  runMessages();   // re-sends whatever is due now (the welcome always is)
+  console.log('Cleared ' + cleared + ' sent stamps and re-sent due messages.');
+  return cleared;
 }
 
 /* ================= WhatsApp (Meta Cloud API) ================= */
