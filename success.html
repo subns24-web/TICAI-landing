@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Payment Successful | SNTG AI Workshop</title>
+<link rel="icon" href="sntg-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#004AAD; --brand-3:#2B8AF0; --brand-soft:#E8F0FC;
+  --gold:#F4C320; --gold-2:#FFD84D; --gold-ink:#3A2A00;
+  --ink:#04101F; --green:#0E9F6E;
+  --t1:#04101F; --t2:#47576B; --t3:#7A8CA3; --line-d:#DDE6F2;
+  --font-te:'Noto Sans Telugu','Plus Jakarta Sans',system-ui,sans-serif;
+  --font-en:'Plus Jakarta Sans','Noto Sans Telugu',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none!important}
+body{font-family:var(--font-te);color:var(--t1);line-height:1.65;-webkit-font-smoothing:antialiased;
+  min-height:100vh;background:linear-gradient(160deg,var(--brand) 0%,#022f6e 55%,var(--ink) 100%);
+  display:flex;flex-direction:column;align-items:center;padding:32px 16px}
+body.lang-en{font-family:var(--font-en)}
+.top{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.top img{height:38px;background:#fff;border-radius:10px;padding:4px 8px}
+.lang{display:flex;background:rgba(255,255,255,.12);border-radius:99px;padding:3px}
+.lang button{border:0;background:none;color:#fff;font:600 .8rem var(--font-en);padding:6px 12px;border-radius:99px;cursor:pointer}
+.lang button.on{background:#fff;color:var(--brand)}
+.card{width:100%;max-width:560px;background:#fff;border-radius:20px;padding:34px 26px;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center}
+.tick{width:76px;height:76px;border-radius:50%;background:var(--green);color:#fff;font-size:2.4rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 0 0 10px rgba(14,159,110,.14)}
+h1{font-size:1.55rem;line-height:1.3;margin-bottom:8px}
+.sub{color:var(--t2);margin-bottom:22px}
+.pid{display:inline-block;background:var(--brand-soft);color:var(--brand);font:600 .8rem var(--font-en);
+  padding:6px 12px;border-radius:8px;margin-bottom:24px;word-break:break-all}
+.steps{text-align:left;border-top:1px solid var(--line-d);padding-top:20px;margin-bottom:24px}
+.steps h2{font-size:1rem;margin-bottom:12px}
+.step{display:flex;gap:12px;margin-bottom:12px;color:var(--t2);font-size:.95rem}
+.step b{color:var(--t1)}
+.n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--gold-ink);
+  font:800 .8rem var(--font-en);display:flex;align-items:center;justify-content:center;margin-top:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--gold-ink);font-weight:800;
+  text-decoration:none;padding:14px 20px;border-radius:12px;font-size:1rem}
+.btn.ghost{background:none;color:var(--brand);border:2px solid var(--brand-soft);margin-top:10px}
+.note{font-size:.8rem;color:var(--t3);margin-top:18px}
+footer{color:rgba(255,255,255,.55);font-size:.78rem;margin-top:22px;text-align:center}
+</style>
+</head>
+<body>
+<div class="top">
+  <a href="index.html"><img src="sntg-logo.svg" alt="SNTG"></a>
+  <div class="lang"><button id="btn-te" onclick="setLang('te')">తెలుగు</button><button id="btn-en" onclick="setLang('en')">EN</button></div>
+</div>
+
+<main class="card">
+  <div class="tick">✓</div>
+  <h1 class="i18n" data-te="Payment విజయవంతం! మీ seat confirm అయింది 🎉" data-en="Payment successful! Your seat is confirmed 🎉"></h1>
+  <p class="sub" id="hello"></p>
+  <div class="pid" id="pid" hidden></div>
+
+  <div class="steps">
+    <h2 class="i18n" data-te="ఇప్పుడు ఏం జరుగుతుంది?" data-en="What happens next?"></h2>
+    <div class="step"><span class="n">1</span><span class="i18n"
+      data-te="Razorpay నుండి <b>payment receipt</b> మీ email కి వస్తుంది."
+      data-en="Razorpay emails you a <b>payment receipt</b>."></span></div>
+    <div class="step"><span class="n">2</span><span class="i18n"
+      data-te="Workshop కి ముందు <b>live link</b> మరియు reminders మీ <b>email, WhatsApp</b> కి పంపుతాం."
+      data-en="Before the workshop we send the <b>live link</b> and reminders to your <b>email and WhatsApp</b>."></span></div>
+    <div class="step"><span class="n">3</span><span class="i18n"
+      data-te="Workshop రోజు phone charge చేసి, internet ఉండేలా చూసుకోండి. అంతే!"
+      data-en="On the day, keep your phone charged and online. That's all!"></span></div>
+  </div>
+
+  <a class="btn i18n" id="wa" href="#" target="_blank" rel="noopener" hidden
+     data-te="WhatsApp లో మాకు message చేయండి →" data-en="Message us on WhatsApp →"></a>
+  <a class="btn ghost i18n" href="index.html" data-te="← Home page కి వెళ్ళండి" data-en="← Back to the home page"></a>
+
+  <p class="note i18n"
+     data-te="Email రాకపోతే spam/promotions folder చూడండి, లేదా subns24@gmail.com కి మీ payment ID తో mail చేయండి."
+     data-en="No email? Check spam/promotions, or write to subns24@gmail.com with your payment ID."></p>
+</main>
+<footer>© SNTG · AI Workshop</footer>
+
+<script>
+/* =======================================================
+   CONFIG — keep these the same as in index.html
+   ======================================================= */
+const WHATSAPP_NUMBER = "91XXXXXXXXXX";  // no + and no spaces
+const SHEET_ENDPOINT  = "";              // Google Apps Script web-app URL (ends in /exec)
+
+const q = new URLSearchParams(location.search);
+// Razorpay adds these to the redirect URL; names differ between Payment Pages and Payment Links.
+const paymentId = q.get('razorpay_payment_id') || q.get('payment_id') || '';
+let lead = {};
+try{ lead = JSON.parse(sessionStorage.getItem('sntg_lead') || '{}'); }catch(e){}
+
+// Tell the sheet about this payment straight away. The script checks the payment ID with
+// Razorpay before recording it, so a fake visit to this page records nothing.
+if(SHEET_ENDPOINT && paymentId){
+  const body = JSON.stringify({ type:'paid', payment_id:paymentId, name:lead.name||'', email:lead.email||'', phone:lead.phone||'' });
+  try{ navigator.sendBeacon(SHEET_ENDPOINT, new Blob([body], {type:'text/plain'})); }catch(e){}
+}
+
+function setLang(l){
+  document.documentElement.lang = l;
+  document.body.classList.toggle('lang-en', l === 'en');
+  document.querySelectorAll('.i18n').forEach(el=>{ const v = el.getAttribute('data-' + l); if(v !== null) el.innerHTML = v; });
+  const name = (lead.name || '').replace(/[<>&"]/g, '');
+  document.getElementById('hello').textContent = l === 'te'
+    ? `${name ? name + ' గారు, ' : ''}ధన్యవాదాలు 🙏 Workshop లో కలుద్దాం.`
+    : `Thank you${name ? ', ' + name : ''} 🙏 See you at the workshop.`;
+  const pid = document.getElementById('pid');
+  if(paymentId){ pid.hidden = false; pid.textContent = 'Payment ID: ' + paymentId; }
+  document.getElementById('btn-te').classList.toggle('on', l === 'te');
+  document.getElementById('btn-en').classList.toggle('on', l === 'en');
+  try{ localStorage.setItem('sntg_lang', l); }catch(e){}
+}
+setLang((()=>{ try{ return localStorage.getItem('sntg_lang') || 'te'; }catch(e){ return 'te'; } })());
+
+if(!/X/i.test(WHATSAPP_NUMBER)){
+  const wa = document.getElementById('wa');
+  const msg = `Hi 🙏 I paid for the ₹199 AI Workshop.${paymentId ? '\nPayment ID: ' + paymentId : ''}`;
+  wa.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+  wa.hidden = false;
+}
+</script>
+</body>
+</html>
