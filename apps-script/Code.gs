@@ -15,10 +15,15 @@
  *  - every 5 minutes, by checkRecentPayments(), which catches anyone who
  *    closed the browser before the success page loaded.
  *
- * Razorpay API keys live in Project Settings → Script properties, never in this file:
+ * Razorpay API keys (recommended) live in Project Settings → Script properties, never in this file:
  *   RAZORPAY_KEY_ID      rzp_live_...
  *   RAZORPAY_KEY_SECRET  ...
+ * Without keys it still works: success-page payments are saved as "UNVERIFIED"
+ * and the email asks you to confirm them in the Razorpay dashboard.
  */
+
+// The "SNTG Workshop Registrations" sheet in subns24@gmail.com's Google Drive.
+const SHEET_ID = '1CpZI9srdFq_H44pJv5SK3QQb0XymaVMFGnKNnRvvlUg';
 
 const OWNER_EMAIL         = 'subns24@gmail.com';
 const AMOUNT_PAISE        = 19900;   // ₹199 — only payments of exactly this amount are recorded
@@ -62,6 +67,7 @@ function saveLead_(d) {
 
 /** Runs every 5 minutes (installed by setup()). Looks at the last 2 hours of payments. */
 function checkRecentPayments() {
+  if (!hasKeys_()) return;
   const from = Math.floor(Date.now() / 1000) - 2 * 60 * 60;
   const res = razorpay_('/v1/payments?count=100&from=' + from);
   (res.items || []).forEach(p => recordPayment_(p.id, p, 'auto-check', null));
@@ -81,8 +87,15 @@ function recordPayment_(paymentId, payment, via, hint) {
     const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
     if (alreadyRecorded_(sh, paymentId)) return;
 
-    const p = payment || razorpay_('/v1/payments/' + paymentId);
-    if (p.status !== 'captured' || p.amount !== AMOUNT_PAISE) return;
+    let p = payment;
+    if (!p && !hasKeys_()) {
+      // No API keys: can't ask Razorpay, so save it flagged for a manual check.
+      p = { id: paymentId, status: 'UNVERIFIED', amount: AMOUNT_PAISE, method: '',
+            created_at: Math.floor(Date.now() / 1000), notes: {} };
+    } else {
+      p = p || razorpay_('/v1/payments/' + paymentId);
+      if (p.status !== 'captured' || p.amount !== AMOUNT_PAISE) return;
+    }
 
     const notes = p.notes || {};
     const name  = notes.name || notes.full_name || notes.customer_name || (hint && hint.name) || '';
@@ -118,11 +131,17 @@ function notifyOwner_(p, name, email, phone, via) {
     ['Paid at (IST)', when], ['Recorded via', via]
   ].map(r => '<tr><td style="padding:4px 12px 4px 0;color:#47576B">' + r[0] + '</td><td><b>' +
              escape_(r[1] || '—') + '</b></td></tr>').join('');
+  const unverified = p.status === 'UNVERIFIED';
   MailApp.sendEmail({
     to: OWNER_EMAIL,
-    subject: '✅ New ₹199 workshop payment — ' + (name || email || phone || p.id),
-    htmlBody: '<p>A new seat was paid for the ' + WORKSHOP_NAME + '.</p><table>' + rows + '</table>' +
-              '<p><a href="' + SpreadsheetApp.getActiveSpreadsheet().getUrl() + '">Open the sheet</a></p>'
+    subject: (unverified ? '⚠️ ₹199 payment to verify — ' : '✅ New ₹199 workshop payment — ') +
+             (name || email || phone || p.id),
+    htmlBody: (unverified
+                ? '<p><b>Check this payment ID in the Razorpay dashboard before confirming the seat.</b> ' +
+                  'Add Razorpay API keys to the script to verify payments automatically.</p>'
+                : '<p>A new seat was paid for the ' + WORKSHOP_NAME + '.</p>') +
+              '<table>' + rows + '</table>' +
+              '<p><a href="' + ss_().getUrl() + '">Open the sheet</a></p>'
   });
 }
 
@@ -153,8 +172,17 @@ function razorpay_(path) {
   return JSON.parse(res.getContentText());
 }
 
+function hasKeys_() {
+  const props = PropertiesService.getScriptProperties();
+  return !!(props.getProperty('RAZORPAY_KEY_ID') && props.getProperty('RAZORPAY_KEY_SECRET'));
+}
+
+function ss_() {
+  return SpreadsheetApp.openById(SHEET_ID);
+}
+
 function sheet_(name, headers) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = ss_();
   let sh = ss.getSheetByName(name);
   if (!sh) {
     sh = ss.insertSheet(name);
@@ -179,6 +207,12 @@ function escape_(v) {
 /* ---------------- one-time setup: run this once from the editor ---------------- */
 
 function setup() {
+  // The sheet was created with the Leads headers on its first tab — rename it to "Leads".
+  const first = ss_().getSheets()[0];
+  if (!ss_().getSheetByName(LEADS_SHEET) && first.getRange('A1').getValue() === LEAD_HEADERS[0]) {
+    first.setName(LEADS_SHEET).setFrozenRows(1);
+    first.getRange(1, 1, 1, LEAD_HEADERS.length).setFontWeight('bold');
+  }
   sheet_(LEADS_SHEET, LEAD_HEADERS);
   sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
 
@@ -187,6 +221,12 @@ function setup() {
     .forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('checkRecentPayments').timeBased().everyMinutes(5).create();
 
-  razorpay_('/v1/payments?count=1');   // fails loudly here if the API keys are wrong
-  console.log('Setup done: tabs created, 5-minute payment check installed, Razorpay keys OK.');
+  if (hasKeys_()) {
+    razorpay_('/v1/payments?count=1');   // fails loudly here if the API keys are wrong
+    console.log('Setup done: tabs ready, 5-minute payment check installed, Razorpay keys OK.');
+  } else {
+    console.log('Setup done: tabs ready. No Razorpay keys yet — payments will be saved as UNVERIFIED.');
+  }
+  MailApp.sendEmail(OWNER_EMAIL, 'SNTG sheet connected ✅',
+    'Your workshop sheet is connected: ' + ss_().getUrl());
 }
