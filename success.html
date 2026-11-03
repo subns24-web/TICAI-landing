@@ -58,7 +58,7 @@ footer{color:rgba(255,255,255,.55);font-size:.78rem;margin-top:22px;text-align:c
 
 <main class="card">
   <div class="tick">✓</div>
-  <h1 class="i18n" data-te="Payment విజయవంతం! మీ seat confirm అయింది 🎉" data-en="Payment successful! Your seat is confirmed 🎉"></h1>
+  <h1 class="i18n" data-te="మొదటి అడుగు వేసినందుకు అభినందనలు! 🎉" data-en="Congratulations on taking your first steps! 🎉"></h1>
   <p class="sub" id="hello"></p>
   <div class="pid" id="pid" hidden></div>
 
@@ -111,8 +111,8 @@ function setLang(l){
   document.querySelectorAll('.i18n').forEach(el=>{ const v = el.getAttribute('data-' + l); if(v !== null) el.innerHTML = v; });
   const name = (lead.name || '').replace(/[<>&"]/g, '');
   document.getElementById('hello').textContent = l === 'te'
-    ? `${name ? name + ' గారు, ' : ''}ధన్యవాదాలు 🙏 Workshop లో కలుద్దాం.`
-    : `Thank you${name ? ', ' + name : ''} 🙏 See you at the workshop.`;
+    ? `${name ? name + ' గారు, ' : ''}మీ registration confirm అయింది ✅ మీ transformation కి సిద్ధంగా ఉండండి 🚀`
+    : `${name ? name + ', y' : 'Y'}our registration is confirmed ✅ Get ready for your transformation 🚀`;
   const pid = document.getElementById('pid');
   if(paymentId){ pid.hidden = false; pid.textContent = 'Payment ID: ' + paymentId; }
   document.getElementById('btn-te').classList.toggle('on', l === 'te');

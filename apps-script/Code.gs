@@ -149,9 +149,9 @@ function notifyCustomer_(email, name, paymentId) {
   MailApp.sendEmail({
     to: email,
     replyTo: OWNER_EMAIL,
-    subject: 'Your seat is confirmed — ' + WORKSHOP_NAME,
+    subject: 'Your registration is confirmed 🎉 — ' + WORKSHOP_NAME,
     htmlBody: '<p>నమస్కారం ' + escape_(name || '') + ' 🙏</p>' +
-              '<p>Your ₹199 payment is received and your seat is confirmed.</p>' +
+              '<p><b>Congratulations on taking your first steps!</b> Your registration is confirmed. Get ready for your transformation 🚀</p>' +
               '<p>We will send the live workshop link to this email and your WhatsApp before the session.</p>' +
               '<p style="color:#7A8CA3">Payment ID: ' + escape_(paymentId) + '</p><p>— SNTG</p>'
   });
