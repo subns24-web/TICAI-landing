@@ -14,9 +14,9 @@ Open `index.html` locally. Deploy with `vercel` — no build step, no config.
    ```
    Also the footer `https://wa.me/91XXXXXXXXXX` link.
 
-2. **Payment link** — currently empty, so the form only opens WhatsApp:
+2. **Payment link + Google Sheet** — see `SETUP-PAYMENTS.md`. Current ₹199 page:
    ```js
-   const PAYMENT_LINK = "";   // paste your Razorpay / UPI link
+   const PAYMENT_LINK = "https://rzp.io/rzp/fp4Jd12";
    ```
    With it set, the lead lands on your WhatsApp *and* the user goes straight to pay.
 

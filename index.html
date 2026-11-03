@@ -529,6 +529,10 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
             <input type="tel" name="phone" required pattern="[0-9+ ]{10,15}" placeholder="+91 " autocomplete="tel">
           </div>
           <div class="field">
+            <label class="i18n" data-te="Email ID (workshop link, updates కోసం)" data-en="Email (for the workshop link and updates)"></label>
+            <input type="email" name="email" required autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field">
             <label class="i18n" data-te="మీ business" data-en="Your business"></label>
             <select name="biz">
               <option class="i18n" data-te="Manufacturing / Job work" data-en="Manufacturing / job work"></option>
@@ -1096,6 +1100,10 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
             <input type="tel" name="phone" required pattern="[0-9+ ]{10,15}" placeholder="+91 " autocomplete="tel">
           </div>
           <div class="field">
+            <label class="i18n" data-te="Email ID (workshop link, updates కోసం)" data-en="Email (for the workshop link and updates)"></label>
+            <input type="email" name="email" required autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="field">
             <label class="i18n" data-te="మీ business" data-en="Your business"></label>
             <select name="biz">
               <option class="i18n" data-te="Manufacturing / Job work" data-en="Manufacturing / job work"></option>
@@ -1186,7 +1194,10 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
    CONFIG — change these before running ads
    ======================================================= */
 const WHATSAPP_NUMBER = "91XXXXXXXXXX";  // your number, no + and no spaces
-const PAYMENT_LINK    = "https://razorpay.me/@sntrinetraglobal"; // Razorpay payment link. Empty = lead goes to WhatsApp only.
+const PAYMENT_LINK    = "https://rzp.io/rzp/fp4Jd12"; // Razorpay ₹199 Payment Page. Empty = lead goes to WhatsApp only.
+/* Google Apps Script web-app URL (ends in /exec) — see SETUP-PAYMENTS.md.
+   Every form submit is saved to the "Leads" tab of your Google Sheet. Empty = not saved. */
+const SHEET_ENDPOINT  = "";
 
 /* Workshop date. Empty = auto-roll to the next Sunday 11 AM so the page
    never shows a date that has passed. Pin a batch: "2026-08-30T11:00:00+05:30" */
@@ -1328,8 +1339,16 @@ function register(e){
   const g = n => ((f.elements[n] && f.elements[n].value) || '').trim();
   const te = document.documentElement.lang === 'te';
   const msg = te
-    ? `నమస్కారం 🙏 AI Workshop (₹199) కి register చేసుకోవాలి.\n\nపేరు: ${g('name')}\nWhatsApp: ${g('phone')}\nBusiness: ${g('biz')}`
-    : `Hi 🙏 I'd like to register for the ₹199 AI Workshop.\n\nName: ${g('name')}\nWhatsApp: ${g('phone')}\nBusiness: ${g('biz')}`;
+    ? `నమస్కారం 🙏 AI Workshop (₹199) కి register చేసుకోవాలి.\n\nపేరు: ${g('name')}\nWhatsApp: ${g('phone')}\nEmail: ${g('email')}\nBusiness: ${g('biz')}`
+    : `Hi 🙏 I'd like to register for the ₹199 AI Workshop.\n\nName: ${g('name')}\nWhatsApp: ${g('phone')}\nEmail: ${g('email')}\nBusiness: ${g('biz')}`;
+
+  // Save the lead to the Google Sheet. sendBeacon survives the redirect to Razorpay below.
+  if(SHEET_ENDPOINT){
+    const lead = JSON.stringify({ type:'lead', name:g('name'), phone:g('phone'), email:g('email'),
+      business:g('biz'), lang:document.documentElement.lang, page:location.href });
+    try{ navigator.sendBeacon(SHEET_ENDPOINT, new Blob([lead], {type:'text/plain'})); }catch(err){}
+  }
+  try{ sessionStorage.setItem('sntg_lead', JSON.stringify({name:g('name'), email:g('email'), phone:g('phone')})); }catch(err){}
 
   // Skip WhatsApp while the number is still the placeholder, so only the payment page opens.
   if(!/X/i.test(WHATSAPP_NUMBER)) window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
