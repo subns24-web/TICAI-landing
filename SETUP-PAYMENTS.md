@@ -11,7 +11,7 @@ Landing form (name, WhatsApp, email)
                              └─► email to subns24@gmail.com
 ```
 
-A 5-minute background check also records any payment whose buyer closed the
+With Razorpay API keys added (Step 2), a 5-minute background check also records any payment whose buyer closed the
 browser before reaching the success page, so no paid customer is missed.
 
 ---
