@@ -266,10 +266,43 @@ function runMessages() {
     const rows = sh.getRange(2, 1, last - 1, PAYMENT_HEADERS.length).getValues();
     const now = Date.now();
 
+    // One set of messages per person: a buyer who paid more than once is messaged once per stage.
+    const buyerKey = r => {
+      const e = String(r[COL.email - 1] || '').trim().toLowerCase();
+      const ph = String(r[COL.phone - 1] || '').replace(/\D/g, '').slice(-10);
+      return e || ph;
+    };
+    const DUP = 'not sent — same person already received this';
+    const REFUNDED = 'not sent — payment no longer successful in Razorpay';
+    const sentTo = {};   // stage key -> { buyerKey: true }
+    STAGES.forEach(st => sentTo[st.key] = {});
+    rows.forEach(r => {
+      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
+      STAGES.forEach(st => {
+        const v = String(r[st.col - 1] || '');
+        if (v && v.indexOf('not sent') === -1 && buyerKey(r)) sentTo[st.key][buyerKey(r)] = true;
+      });
+    });
+
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       const status = String(r[COL.status - 1]).trim().toLowerCase();
       if (status !== 'captured') continue;   // confirmed by Razorpay only
+      const due = STAGES.filter(st => r[st.col - 1] === '' && st.due(now, start.getTime()));
+      if (!due.length) continue;
+
+      // Re-confirm with Razorpay before messaging: a refunded payment gets nothing more.
+      const pid = String(r[1] || '');
+      if (hasKeys_() && /^pay_/.test(pid)) {
+        try {
+          const p = razorpay_('/v1/payments/' + pid);
+          if (p.status !== 'captured') {
+            sh.getRange(i + 2, COL.status).setValue(p.status);
+            due.forEach(st => sh.getRange(i + 2, st.col).setValue(REFUNDED));
+            continue;
+          }
+        } catch (err) { console.error(err); continue; }   // try again next run
+      }
       const buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || ''),
                       phone: String(r[COL.phone - 1] || '') };
       if (!buyer.name || !buyer.email || !buyer.phone) {
@@ -281,13 +314,15 @@ function runMessages() {
         }
       }
 
-      for (const st of STAGES) {
-        if (r[st.col - 1] !== '' || !st.due(now, start.getTime())) continue;
+      for (const st of due) {
         if (st.key === 'live' && !s.live) { alertMissingLiveLink_(); continue; }
+        const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
+        if (k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
         const result = sendStage_(st.key, buyer, s, start);
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
+        if (k) sentTo[st.key][k] = true;
       }
     }
   } finally {
