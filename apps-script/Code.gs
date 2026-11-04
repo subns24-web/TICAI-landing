@@ -121,8 +121,8 @@ function oneTimeUpdates_() {
     props.setProperty('DONE_DATE_2026_11_22', new Date().toISOString());
   }
 
-  if (!props.getProperty('DONE_TEST_EMAILS_V1')) {
-    props.setProperty('DONE_TEST_EMAILS_V1', new Date().toISOString());   // set first: never sends twice
+  if (!props.getProperty('DONE_TEST_EMAILS_V2')) {
+    props.setProperty('DONE_TEST_EMAILS_V2', new Date().toISOString());   // set first: never sends twice
     const lead = findLead_(ONE_TIME_TEST_EMAIL, '') || { name: '', phone: '', email: ONE_TIME_TEST_EMAIL };
     lead.email = ONE_TIME_TEST_EMAIL;
     const s = settings_();
@@ -293,9 +293,13 @@ function message_(key, b, s, start) {
     : '<p>నమస్కారం 🙏</p>';
   const who = fullName ? fullName + ', ' : '';
   const end = new Date(start.getTime() + WORKSHOP_HOURS * HOUR);
-  const when = Utilities.formatDate(start, 'Asia/Kolkata', "EEEE, d MMMM yyyy, h:mm a") + ' – ' +
-               Utilities.formatDate(end, 'Asia/Kolkata', 'h:mm a') + ' IST';
+  const day = Number(Utilities.formatDate(start, 'Asia/Kolkata', 'd'));
+  const suffix = (day % 100 >= 11 && day % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th');
   const time = Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
+  // e.g. "Sunday, 22nd November 2026 · 10:00 AM IST (till 12:00 PM)"
+  const when = Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE') + ', ' + day + suffix + ' ' +
+               Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' · ' + time +
+               ' (till ' + Utilities.formatDate(end, 'Asia/Kolkata', 'h:mm a') + ')';
   const button = (url, label, color) => '<p style="margin:22px 0"><a href="' + escape_(url) +
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
     label + '</a></p>';
@@ -320,8 +324,9 @@ function message_(key, b, s, start) {
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
     case 'live': return {
-      subject: '🔴 ' + who + 'we start at ' + time + ' — your live link',
-      html: hi + '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
+      subject: '🔴 ' + who + 'we start at ' + time + ' today — your live link',
+      html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
+            '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
             button(s.live, 'Join the live workshop', '#004AAD') +
             '<p style="color:#47576B">Link: ' + escape_(s.live) + '</p>',
       waTemplate: 'sntg_live_link', waParams: [first, time, s.live]
@@ -550,6 +555,10 @@ function settings_() {
   Object.keys(SETTINGS).forEach(k => {
     const v = byLabel[SETTINGS[k][0]];
     out[k] = (v instanceof Date) ? v : String(v == null ? '' : v).trim();
+    if (k === 'date') {
+      const txt = (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm') : out[k];
+      if (!txt || txt === '2026-11-14 11:00') out[k] = SETTINGS.date[1];   // old batch → 22 Nov 10:00
+    }
   });
   return out;
 }
