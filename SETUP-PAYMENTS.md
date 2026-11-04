@@ -25,11 +25,13 @@ The sheet is **already created** in subns24@gmail.com's Google Drive:
 2. Delete what's in `Code.gs`, paste everything from **`apps-script/Code.gs`** in this repo, and click **Save** (💾).
    The script already knows this sheet's ID, so nothing to edit.
 
-## Step 2 — (Recommended, can be done later) Razorpay API keys
+## Step 2 — Razorpay API keys (REQUIRED)
 
-Without keys, payments from the success page are saved as **UNVERIFIED** and the
-email asks you to check the payment ID in Razorpay. With keys, the script confirms
-each payment with Razorpay itself and also catches buyers who closed the browser.
+The script adds a buyer to the **Payments** tab and sends their emails **only after Razorpay
+confirms the payment succeeded**. It asks Razorpay with these keys, so without them nothing is
+recorded and no buyer emails go out (you get a daily "add Razorpay keys" reminder instead).
+With keys, it checks every 5 minutes and right away when a buyer reaches the success page,
+and on its first run it picks up successful payments from the last 7 days.
 
 1. Razorpay Dashboard → **Account & Settings → API Keys → Generate Key** (use **Live** mode).
 2. In Apps Script: **⚙ Project Settings → Script properties → Add script property**:
@@ -111,8 +113,7 @@ four "…sent" columns to **Payments**, and one 5-minute timer that does everyth
 | Send messages to buyers (ON / OFF) | `OFF` pauses everything |
 
 **Rules**
-- Only rows whose **Status** is `captured` (verified by Razorpay) or `VERIFIED` (typed by you) get messages.
-  Without Razorpay keys every payment is `UNVERIFIED` — check it in Razorpay, then type `VERIFIED`.
+- Only payments Razorpay confirms as successful (Status `captured`, ₹199) are added and get messages.
 - Each send is stamped in the row, e.g. `22 Nov 09:05 · Email ✓ · WA ✓`. **Clear the cell to resend.**
 - **Test first:** run `sendTestToMe` (or menu **SNTG → Send all 4 test messages to me**) — all four
   messages go to subns24@gmail.com and your WhatsApp from Settings; the sheet isn't changed.

@@ -6,11 +6,11 @@
  *
  * Tabs it manages in the "SNTG Workshop Registrations" sheet:
  *  - Leads     every landing-page form submit (name, WhatsApp, email, business)
- *  - Payments  every ₹199 payment + when each message was sent to that buyer
+ *  - Payments  every ₹199 payment CONFIRMED BY RAZORPAY + when each message was sent
  *  - Settings  workshop date, live link, community link, feedback link, ON/OFF switch
  *
  * Messages to each paid buyer (email always; WhatsApp once Meta Cloud API is set up):
- *  1. Welcome     as soon as the payment is verified
+ *  1. Welcome     as soon as Razorpay confirms the payment (registration confirmed)
  *  2. Reminder    the evening before (16 h before start)
  *  3. Live link   1 hour before start  (needs "Live link" filled in Settings)
  *  4. Thank-you   30 min after the workshop ends (WORKSHOP_HOURS)
@@ -18,7 +18,7 @@
  * buyer's row; clear that cell to send that message again.
  *
  * Script properties (Project Settings → Script properties) — secrets never go in this file:
- *   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET      verify payments with Razorpay (recommended)
+ *   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET      REQUIRED: confirm payments with Razorpay
  *   WA_TOKEN, WA_PHONE_NUMBER_ID              Meta WhatsApp Cloud API (turns WhatsApp on)
  *   WA_TEMPLATE_LANG                          optional, template language code (default "en")
  */
@@ -28,6 +28,14 @@ const SHEET_ID = '1CpZI9srdFq_H44pJv5SK3QQb0XymaVMFGnKNnRvvlUg';
 
 const OWNER_EMAIL   = 'subns24@gmail.com';
 const AMOUNT_PAISE  = 19900;   // ₹199 — only payments of exactly this amount are recorded
+const TEST_AMOUNT_PAISE = 100; // ₹1 — also accepted while the Settings "Testing" switch is ON
+
+/** ₹199, or ₹1 while testing. */
+function isWorkshopAmount_(paise) {
+  if (paise === AMOUNT_PAISE) return true;
+  if (paise !== TEST_AMOUNT_PAISE) return false;
+  try { return String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) { return false; }
+}
 const WORKSHOP_NAME = 'SNTG Live AI Workshop (Telugu)';
 const SENDER_NAME   = 'SNTG AI Workshop';
 const WORKSHOP_HOURS = 2;   // 10 AM – 12 PM
@@ -48,7 +56,10 @@ const SETTINGS = {
   community: ['WhatsApp community link', 'https://chat.whatsapp.com/KUMcVB1BMy64Pvjbu79zj0'],
   feedback:  ['Feedback / bonus link', ''],
   ownerWa:   ['Your WhatsApp number (for test messages)', ''],
-  enabled:   ['Send messages to buyers (ON / OFF)', 'ON']
+  enabled:   ['Send messages to buyers (ON / OFF)', 'ON'],
+  testing:   ['Testing: email every payment, even repeats by the same person (ON / OFF)', 'ON']
+  // While Testing is ON, each NEW payment also gets the reminder, live-link and thank-you emails
+  // immediately, and subns24@gmail.com gets a copy (BCC) of every buyer email.
 };
 
 const HOUR = 3600 * 1000, MIN = 60 * 1000;
@@ -70,7 +81,13 @@ function doPost(e) {
   try {
     const data = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (data.type === 'lead') saveLead_(data);
-    else if (data.type === 'paid') recordPayment_(String(data.payment_id || ''), null, 'success page', data);
+    else if (data.type === 'paid') {
+      // Reaching the success page proves nothing by itself: only Razorpay's answer counts.
+      const pid = String(data.payment_id || '');
+      if (!hasKeys_()) alertMissingKeys_();
+      else if (/^pay_/.test(pid)) recordPayment_(pid, null, 'success page', data);
+      else checkRecentPayments();                           // no ID in the redirect: ask Razorpay now
+    }
   } catch (err) {
     console.error(err);
   }
@@ -91,8 +108,66 @@ function onOpen() {
 
 /** Runs every 5 minutes (installed by setup()). */
 function tick() {
+  try { oneTimeUpdates_(); } catch (err) { console.error(err); }
   try { checkRecentPayments(); } catch (err) { console.error(err); }
   runMessages();
+}
+
+/* ================= one-time updates (run automatically by the timer) ================= */
+
+/**
+ * Sets the sheet's timezone to IST and re-saves the existing timestamps (column A of
+ * Leads and Payments) so rows written while the sheet was on GMT also show India time.
+ */
+function switchSheetToIST_() {
+  const ss = ss_();
+  const cols = [LEADS_SHEET, PAYMENTS_SHEET].map(n => ss.getSheetByName(n)).filter(sh => sh && sh.getLastRow() > 1)
+    .map(sh => ({ range: sh.getRange(2, 1, sh.getLastRow() - 1, 1) }));
+  cols.forEach(c => c.values = c.range.getValues());          // read as real moments in time (old zone)
+  ss.setSpreadsheetTimeZone('Asia/Kolkata');
+  cols.forEach(c => c.range.setValues(c.values));             // write back: now shown in IST
+  SpreadsheetApp.flush();
+}
+
+// Test emails go here once, addressed by the name this email typed on the website.
+const ONE_TIME_TEST_EMAIL = 'priyankka.156@gmail.com';
+
+/**
+ * Runs each update once, the first time the timer fires after this code is saved:
+ *  1. moves the Settings date from the old batch (14 Nov 11:00) to 22 Nov 10:00
+ *  2. sends the four test emails to ONE_TIME_TEST_EMAIL with the name from the Leads tab
+ */
+function oneTimeUpdates_() {
+  const props = PropertiesService.getScriptProperties();
+
+  // Show every time in the sheet in India time (it was created on GMT).
+  if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
+
+  if (!props.getProperty('DONE_DATE_2026_11_22')) {
+    const sh = ensureSettings_();
+    const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
+    rows.forEach((r, i) => {
+      const v = isDate_(r[1]) ? Utilities.formatDate(r[1], ss_().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm') : String(r[1]).trim();
+      if (r[0] === SETTINGS.date[0] && (v === '' || v === '2026-11-14 11:00')) {
+        sh.getRange(i + 2, 2).setValue('2026-11-22 10:00');
+      }
+    });
+    props.setProperty('DONE_DATE_2026_11_22', new Date().toISOString());
+  }
+
+  if (!props.getProperty('DONE_TEST_EMAILS_V3')) {
+    props.setProperty('DONE_TEST_EMAILS_V3', new Date().toISOString());   // set first: never sends twice
+    const lead = findLead_(ONE_TIME_TEST_EMAIL, '') || { name: '', phone: '', email: ONE_TIME_TEST_EMAIL };
+    lead.email = ONE_TIME_TEST_EMAIL;
+    const s = settings_();
+    const start = workshopStart_(s);
+    const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
+    const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
+    MailApp.sendEmail(OWNER_EMAIL, 'SNTG: script updated ✅ test emails sent',
+      'The new script is running.\n\nWorkshop date in Settings: ' + settings_().date +
+      '\nTest emails sent to ' + (lead.name || '(no name)') + ' <' + lead.email + '>:\n' + out.join('\n') +
+      '\n\nSheet: ' + ss_().getUrl());
+  }
 }
 
 /* ================= leads ================= */
@@ -110,15 +185,37 @@ function saveLead_(d) {
 /** Looks at the last 2 hours of Razorpay payments (only when API keys are set). */
 function checkRecentPayments() {
   if (!hasKeys_()) return;
-  const from = Math.floor(Date.now() / 1000) - 2 * 60 * 60;
-  const res = razorpay_('/v1/payments?count=100&from=' + from);
-  (res.items || []).forEach(p => recordPayment_(p.id, p, 'auto-check', null));
+  const props = PropertiesService.getScriptProperties();
+  const now = Math.floor(Date.now() / 1000);
+  const lastRun = Number(props.getProperty('LAST_RAZORPAY_CHECK') || 0);
+  // From 2 h before the last check (overlap is safe: duplicates are skipped); first run: last 7 days.
+  let from = lastRun ? lastRun - 2 * 3600 : now - 7 * 24 * 3600;
+  for (let page = 0; page < 10; page++) {
+    const res = razorpay_('/v1/payments?count=100&from=' + from + '&to=' + now + '&skip=' + page * 100);
+    const items = res.items || [];
+    items.forEach(p => recordPayment_(p.id, p, 'Razorpay', null));
+    if (items.length < 100) break;
+  }
+  props.setProperty('LAST_RAZORPAY_CHECK', String(now));
+}
+
+/** Emails you (once a day) that payments can't be confirmed until the Razorpay keys are added. */
+function alertMissingKeys_() {
+  const props = PropertiesService.getScriptProperties();
+  const today = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+  if (props.getProperty('KEYS_ALERT') === today) return;
+  props.setProperty('KEYS_ALERT', today);
+  MailApp.sendEmail(OWNER_EMAIL, '⚠️ A buyer reached the success page — add Razorpay keys to confirm payments',
+    'Someone just reached the payment success page, but the script cannot ask Razorpay whether the payment ' +
+    'succeeded, so nothing was added to the Payments tab and no emails were sent.\n\n' +
+    'Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Apps Script → Project Settings → Script properties. ' +
+    'Within 5 minutes the script then picks up every successful payment from the last 7 days, adds it ' +
+    'to the sheet and sends the welcome email.\n\n' + ss_().getUrl());
 }
 
 /**
- * Records one payment if Razorpay confirms it is captured and for ₹199.
- * Without API keys, success-page payments are saved as UNVERIFIED and get no buyer
- * messages until you type VERIFIED in their Status cell.
+ * Records one payment only if Razorpay confirms it is captured (successful) and for ₹199.
+ * Nothing is recorded without the Razorpay API keys.
  */
 function recordPayment_(paymentId, payment, via, hint) {
   if (!/^pay_[A-Za-z0-9]{6,30}$/.test(paymentId)) return;
@@ -130,14 +227,9 @@ function recordPayment_(paymentId, payment, via, hint) {
     const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
     if (alreadyRecorded_(sh, paymentId)) return;
 
-    let p = payment;
-    if (!p && !hasKeys_()) {
-      p = { id: paymentId, status: 'UNVERIFIED', amount: AMOUNT_PAISE, method: '',
-            created_at: Math.floor(Date.now() / 1000), notes: {} };
-    } else {
-      p = p || razorpay_('/v1/payments/' + paymentId);
-      if (p.status !== 'captured' || p.amount !== AMOUNT_PAISE) return;
-    }
+    if (!payment && !hasKeys_()) return;                 // can't confirm with Razorpay
+    const p = payment || razorpay_('/v1/payments/' + paymentId);
+    if (p.status !== 'captured' || !isWorkshopAmount_(p.amount)) return;   // only successful ₹199 (₹1 while testing)
 
     const notes = p.notes || {};
     let email = p.email || notes.email || (hint && hint.email) || '';
@@ -174,8 +266,7 @@ function alreadyRecorded_(sh, paymentId) {
 function runMessages() {
   const s = settings_();
   if (String(s.enabled).trim().toUpperCase() === 'OFF') return;
-  const start = parseIST_(s.date);
-  if (!start) { console.error('Workshop date in Settings is not readable: ' + s.date); return; }
+  const start = workshopStart_(s);
 
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -186,10 +277,46 @@ function runMessages() {
     const rows = sh.getRange(2, 1, last - 1, PAYMENT_HEADERS.length).getValues();
     const now = Date.now();
 
+    // One set of messages per person: a buyer who paid more than once is messaged once per stage.
+    const buyerKey = r => {
+      const e = String(r[COL.email - 1] || '').trim().toLowerCase();
+      const ph = String(r[COL.phone - 1] || '').replace(/\D/g, '').slice(-10);
+      return e || ph;
+    };
+    const DUP = 'not sent — same person already received this';
+    const REFUNDED = 'not sent — payment no longer successful in Razorpay';
+    const sentTo = {};   // stage key -> { buyerKey: true }
+    STAGES.forEach(st => sentTo[st.key] = {});
+    rows.forEach(r => {
+      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
+      STAGES.forEach(st => {
+        const v = String(r[st.col - 1] || '');
+        if (v && v.indexOf('not sent') === -1 && buyerKey(r)) sentTo[st.key][buyerKey(r)] = true;
+      });
+    });
+
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       const status = String(r[COL.status - 1]).trim().toLowerCase();
-      if (status !== 'captured' && status !== 'verified') continue;
+      if (status !== 'captured') continue;   // confirmed by Razorpay only
+      const testingNow = String(s.testing).trim().toUpperCase() === 'ON';
+      // Testing: a new payment (welcome not sent yet) gets all four emails immediately.
+      const allNow = testingNow && r[STAGES[0].col - 1] === '';
+      const due = STAGES.filter(st => r[st.col - 1] === '' && (allNow || st.due(now, start.getTime())));
+      if (!due.length) continue;
+
+      // Re-confirm with Razorpay before messaging: a refunded payment gets nothing more.
+      const pid = String(r[1] || '');
+      if (hasKeys_() && /^pay_/.test(pid)) {
+        try {
+          const p = razorpay_('/v1/payments/' + pid);
+          if (p.status !== 'captured') {
+            sh.getRange(i + 2, COL.status).setValue(p.status);
+            due.forEach(st => sh.getRange(i + 2, st.col).setValue(REFUNDED));
+            continue;
+          }
+        } catch (err) { console.error(err); continue; }   // try again next run
+      }
       const buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || ''),
                       phone: String(r[COL.phone - 1] || '') };
       if (!buyer.name || !buyer.email || !buyer.phone) {
@@ -201,13 +328,17 @@ function runMessages() {
         }
       }
 
-      for (const st of STAGES) {
-        if (r[st.col - 1] !== '' || !st.due(now, start.getTime())) continue;
-        if (st.key === 'live' && !s.live) { alertMissingLiveLink_(); continue; }
+      for (const st of due) {
+        if (st.key === 'live' && !s.live && !allNow) { alertMissingLiveLink_(); continue; }
+        const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
+        const testing = String(s.testing).trim().toUpperCase() === 'ON';
+        if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
-        const result = sendStage_(st.key, buyer, s, start);
+        const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
+        const result = sendStage_(st.key, buyer, sSend, start);
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
+        if (k) sentTo[st.key][k] = true;
       }
     }
   } finally {
@@ -222,8 +353,11 @@ function sendStage_(key, buyer, s, start) {
 
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(buyer.email)) {
     try {
-      MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
-                          subject: m.subject, htmlBody: emailLayout_(m.html) });
+      const opts = { to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
+                     subject: m.subject, htmlBody: emailLayout_(m.html) };
+      // Testing: you get a copy of every email a buyer receives.
+      if (String(s.testing).trim().toUpperCase() === 'ON' && buyer.email.toLowerCase() !== OWNER_EMAIL) opts.bcc = OWNER_EMAIL;
+      MailApp.sendEmail(opts);
       parts.push('Email ✓');
     } catch (err) { parts.push('Email ✗ ' + err.message); }
   } else {
@@ -251,10 +385,13 @@ function message_(key, b, s, start) {
     ? '<p>నమస్కారం <b>' + escape_(fullName) + '</b> గారు 🙏<br>Dear <b>' + escape_(fullName) + '</b>,</p>'
     : '<p>నమస్కారం 🙏</p>';
   const who = fullName ? fullName + ', ' : '';
-  const end = new Date(start.getTime() + WORKSHOP_HOURS * HOUR);
-  const when = Utilities.formatDate(start, 'Asia/Kolkata', "EEEE, d MMMM yyyy, h:mm a") + ' – ' +
-               Utilities.formatDate(end, 'Asia/Kolkata', 'h:mm a') + ' IST';
+  const day = Number(Utilities.formatDate(start, 'Asia/Kolkata', 'd'));
+  const suffix = (day % 100 >= 11 && day % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th');
   const time = Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
+  // e.g. "Sunday, 22nd November 2026 · 10:00 AM IST"
+  const when = Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE') + ', ' + day + suffix + ' ' +
+               Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' · ' + time +
+               '';
   const button = (url, label, color) => '<p style="margin:22px 0"><a href="' + escape_(url) +
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
     label + '</a></p>';
@@ -279,15 +416,17 @@ function message_(key, b, s, start) {
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
     case 'live': return {
-      subject: '🔴 ' + who + 'we start at ' + time + ' — your live link',
-      html: hi + '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
+      subject: '🔴 ' + who + 'we start at ' + time + ' today — your live link',
+      html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
+            '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
             button(s.live, 'Join the live workshop', '#004AAD') +
             '<p style="color:#47576B">Link: ' + escape_(s.live) + '</p>',
       waTemplate: 'sntg_live_link', waParams: [first, time, s.live]
     };
     case 'thanks': return {
       subject: '🙏 Thank you for joining, ' + (fullName || 'friend') + ' — ' + WORKSHOP_NAME,
-      html: hi + '<p>Thank you for attending! We hope you are already using AI in your business.</p>' +
+      html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
+            '<p>Thank you for attending! We hope you are already using AI in your business.</p>' +
             (s.feedback ? '<p>Please share your feedback and get your bonus files here:</p>' +
                           button(s.feedback, 'Feedback & bonus files', '#004AAD') : '') +
             '<p>Stay in the community for tips and updates:</p>' +
@@ -317,7 +456,7 @@ function alertMissingLiveLink_() {
 /** Sends all four messages to you (OWNER_EMAIL + your WhatsApp from Settings). Changes nothing in the sheet. */
 function sendTestToMe() {
   const s = settings_();
-  const start = parseIST_(s.date) || new Date(Date.now() + 24 * HOUR);
+  const start = workshopStart_(s);
   const me = { name: 'Test', email: OWNER_EMAIL, phone: String(s.ownerWa || '') };
   const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, me, sTest, start));
@@ -359,7 +498,7 @@ function resendToAllBuyers() {
   let cleared = 0;
   rows.forEach((r, i) => {
     const status = String(r[COL.status - 1]).trim().toLowerCase();
-    if (status !== 'captured' && status !== 'verified') return;
+    if (status !== 'captured') return;
     STAGES.forEach(st => {
       if (r[st.col - 1] !== '') { sh.getRange(i + 2, st.col).setValue(''); cleared++; }
     });
@@ -381,7 +520,7 @@ function sendTestToLatestLead() {
   const lead = { name: String(r[1] || '').trim(), phone: String(r[2] || ''), email: String(r[3] || '').trim() };
   if (!lead.email) throw new Error('The latest form entry has no email.');
   const s = settings_();
-  const start = parseIST_(s.date) || new Date(Date.now() + 24 * HOUR);
+  const start = workshopStart_(s);
   const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
   console.log('Sent to ' + lead.name + ' <' + lead.email + '>\n' + out.join('\n'));
@@ -447,15 +586,11 @@ function notifyOwner_(p, name, email, phone, via) {
     ['Paid at (IST)', when], ['Recorded via', via]
   ].map(r => '<tr><td style="padding:4px 12px 4px 0;color:#47576B">' + r[0] + '</td><td><b>' +
              escape_(r[1] || '—') + '</b></td></tr>').join('');
-  const unverified = p.status === 'UNVERIFIED';
   MailApp.sendEmail({
     to: OWNER_EMAIL,
-    subject: (unverified ? '⚠️ ₹199 payment to verify — ' : '✅ New ₹199 workshop payment — ') +
-             (name || email || phone || p.id),
-    htmlBody: (unverified
-                ? '<p><b>Check this payment ID in the Razorpay dashboard.</b> If it is real, type <b>VERIFIED</b> ' +
-                  'in its Status cell (column H) and the buyer\'s welcome message goes out within 5 minutes.</p>'
-                : '<p>A new seat was paid for the ' + WORKSHOP_NAME + '. The buyer\'s welcome message is on its way.</p>') +
+    subject: '✅ New ₹' + (p.amount / 100) + ' workshop payment — ' + (name || email || phone || p.id),
+    htmlBody: '<p>Razorpay confirmed a successful payment for the ' + WORKSHOP_NAME +
+              '. The buyer\'s welcome email is on its way.</p>' +
               '<table>' + rows + '</table>' +
               '<p><a href="' + ss_().getUrl() + '">Open the sheet</a></p>'
   });
@@ -508,7 +643,13 @@ function settings_() {
   const out = {};
   Object.keys(SETTINGS).forEach(k => {
     const v = byLabel[SETTINGS[k][0]];
-    out[k] = (v instanceof Date) ? v : String(v == null ? '' : v).trim();
+    out[k] = isDate_(v) ? v : String(v == null ? '' : v).trim();
+    if (k === 'date') {
+      // If Sheets turned the text into a date, read the time exactly as shown in the sheet, as IST.
+      const txt = isDate_(v) ? Utilities.formatDate(v, ss_().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm') : out[k];
+      out[k] = txt;
+      if (!txt || txt === '2026-11-14 11:00') out[k] = SETTINGS.date[1];   // old batch → 22 Nov 10:00
+    }
   });
   return out;
 }
@@ -530,9 +671,21 @@ function ensureSettings_() {
   return sh;
 }
 
+/** Workshop start from Settings; if that cell can't be read, the batch date in this file (never "now"). */
+function workshopStart_(s) {
+  const d = parseIST_(s.date);
+  if (d) return d;
+  console.error('Workshop date in Settings is not readable (' + s.date + '); using ' + SETTINGS.date[1] + ' IST.');
+  return parseIST_(SETTINGS.date[1]);
+}
+
+function isDate_(v) {
+  return Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v.getTime());
+}
+
 /** Accepts a Date or "yyyy-mm-dd hh:mm" (read as India time). */
 function parseIST_(v) {
-  if (v instanceof Date) return v;
+  if (isDate_(v)) return v;
   const m = String(v || '').match(/(\d{4})-(\d{1,2})-(\d{1,2})[ T]+(\d{1,2}):(\d{2})/);
   if (!m) return null;
   return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 330 * MIN);
@@ -549,9 +702,57 @@ function escape_(v) {
   return String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+/* ================= health check: run this to see what's working ================= */
+
+/**
+ * Prints a plain-language status report in the Execution log. Changes nothing, sends nothing.
+ * Never prints the Razorpay secret.
+ */
+function checkSetup() {
+  const lines = [];
+  const ok = (good, text) => lines.push((good ? '✅ ' : '❌ ') + text);
+  const props = PropertiesService.getScriptProperties();
+
+  try { ok(true, 'Sheet opens: ' + ss_().getName() + ' (timezone ' + ss_().getSpreadsheetTimeZone() + ')'); }
+  catch (e) { ok(false, 'Cannot open the sheet: ' + e.message); }
+
+  try { const s = settings_(); ok(true, 'Workshop date used in emails: ' + Utilities.formatDate(workshopStart_(s), 'Asia/Kolkata', "EEEE, d MMMM yyyy, h:mm a") + ' IST'); }
+  catch (e) { ok(false, 'Settings tab: ' + e.message); }
+
+  const id = props.getProperty('RAZORPAY_KEY_ID') || '';
+  const secret = props.getProperty('RAZORPAY_KEY_SECRET') || '';
+  ok(!!id, id ? 'RAZORPAY_KEY_ID is set (' + id.slice(0, 13) + '…)' : 'RAZORPAY_KEY_ID is missing in Script properties');
+  ok(!!secret, secret ? 'RAZORPAY_KEY_SECRET is set (hidden)' : 'RAZORPAY_KEY_SECRET is missing in Script properties');
+  if (id && !/^rzp_(live|test)_/.test(id)) ok(false, 'RAZORPAY_KEY_ID should start with rzp_live_ (check for spaces)');
+  if (id.startsWith('rzp_test_')) ok(false, 'This is a TEST key: real (live) payments will not be seen. Use the rzp_live_ key.');
+
+  if (id && secret) {
+    try {
+      const res = razorpay_('/v1/payments?count=100&from=' + (Math.floor(Date.now() / 1000) - 7 * 24 * 3600));
+      const items = res.items || [];
+      const good = items.filter(p => p.status === 'captured' && isWorkshopAmount_(p.amount));
+      ok(true, 'Razorpay connection works. Last 7 days: ' + items.length + ' payments, ' + good.length + ' successful ₹199');
+      good.slice(0, 10).forEach(p => lines.push('     • ' + p.id + '  ' + (p.email || '') + '  ' + (p.contact || '') + '  ' +
+        Utilities.formatDate(new Date(p.created_at * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST'));
+    } catch (e) {
+      ok(false, 'Razorpay refused the keys: ' + String(e.message).slice(0, 160) + '  (401 = wrong ID/secret pair)');
+    }
+  }
+
+  const triggers = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction());
+  ok(triggers.indexOf('tick') !== -1, 'Timer: ' + (triggers.length ? triggers.join(', ') : 'none — run setup once'));
+  const last = props.getProperty('LAST_RAZORPAY_CHECK');
+  lines.push('ℹ️ Last Razorpay check: ' + (last ? Utilities.formatDate(new Date(Number(last) * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST' : 'never'));
+  lines.push('ℹ️ Emails left today: ' + MailApp.getRemainingDailyQuota());
+
+  console.log(lines.join('\n'));
+  return lines.join('\n');
+}
+
 /* ================= one-time setup: run this from the editor ================= */
 
 function setup() {
+  if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
   const first = ss_().getSheets()[0];
   if (!ss_().getSheetByName(LEADS_SHEET) && first.getRange('A1').getValue() === LEAD_HEADERS[0]) {
     first.setName(LEADS_SHEET).setFrozenRows(1);
@@ -560,15 +761,16 @@ function setup() {
   sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
   ensureSettings_();
 
-  // One 5-minute timer that checks payments and sends due messages.
-  ScriptApp.getProjectTriggers()
-    .filter(t => ['checkRecentPayments', 'tick'].indexOf(t.getHandlerFunction()) !== -1)
-    .forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('tick').timeBased().everyMinutes(5).create();
+  // One 5-minute timer that checks payments and sends due messages (kept if it already exists).
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.filter(t => t.getHandlerFunction() === 'checkRecentPayments').forEach(t => ScriptApp.deleteTrigger(t));
+  if (!triggers.some(t => t.getHandlerFunction() === 'tick')) {
+    ScriptApp.newTrigger('tick').timeBased().everyMinutes(5).create();
+  }
 
   const notes = [];
   if (hasKeys_()) { razorpay_('/v1/payments?count=1'); notes.push('Razorpay keys OK'); }
-  else notes.push('no Razorpay keys (payments saved as UNVERIFIED)');
+  else notes.push('NO Razorpay keys — payments cannot be confirmed, nothing will be recorded');
   notes.push(waConfigured_() ? 'WhatsApp ON' : 'WhatsApp off (add WA_TOKEN + WA_PHONE_NUMBER_ID)');
   console.log('Setup done: tabs ready, 5-minute timer installed, ' + notes.join(', ') + '.');
   MailApp.sendEmail(OWNER_EMAIL, 'SNTG sheet connected ✅',

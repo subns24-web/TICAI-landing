@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
+<script>
+/* If Razorpay sent the buyer to a test copy of this page (e.g. raw.githack.com),
+   forward them straight to the live site, keeping the payment ID in the URL. */
+(function(){
+  var LIVE = 'https://sntg-ai-workshop.vercel.app/success.html';
+  var h = location.hostname;
+  if (/(^|\.)githack\.com$|(^|\.)rawgit\.com$|(^|\.)github(usercontent)?\.(com|io)$/.test(h)) {
+    location.replace(LIVE + location.search + location.hash);
+  }
+})();
+</script>
 <title>Payment Successful | SNTG AI Workshop</title>
 <link rel="icon" href="sntg-logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -113,9 +124,14 @@ try{ lead = JSON.parse(sessionStorage.getItem('sntg_lead') || '{}'); }catch(e){}
 
 // Tell the sheet about this payment straight away. The script checks the payment ID with
 // Razorpay before recording it, so a fake visit to this page records nothing.
-if(SHEET_ENDPOINT && paymentId){
+// Razorpay doesn't always add the payment ID to the redirect, so report the arrival either way,
+// with what the buyer typed on the landing page. Once per visit, so a refresh doesn't repeat it.
+let reported = false;
+try{ reported = sessionStorage.getItem('sntg_paid_reported') === (paymentId || 'x'); }catch(e){}
+if(SHEET_ENDPOINT && !reported && (paymentId || lead.email || lead.phone)){
   const body = JSON.stringify({ type:'paid', payment_id:paymentId, name:lead.name||'', email:lead.email||'', phone:lead.phone||'' });
   try{ navigator.sendBeacon(SHEET_ENDPOINT, new Blob([body], {type:'text/plain'})); }catch(e){}
+  try{ sessionStorage.setItem('sntg_paid_reported', paymentId || 'x'); }catch(e){}
 }
 
 function setLang(l){
