@@ -13,7 +13,7 @@
  *  1. Welcome     as soon as the payment is verified
  *  2. Reminder    the evening before (16 h before start)
  *  3. Live link   1 hour before start  (needs "Live link" filled in Settings)
- *  4. Thank-you   30 min after the 3-hour workshop ends
+ *  4. Thank-you   30 min after the workshop ends (WORKSHOP_HOURS)
  * A timer runs every 5 minutes and sends whatever is due. Each send is stamped in the
  * buyer's row; clear that cell to send that message again.
  *
@@ -30,7 +30,7 @@ const OWNER_EMAIL   = 'subns24@gmail.com';
 const AMOUNT_PAISE  = 19900;   // ₹199 — only payments of exactly this amount are recorded
 const WORKSHOP_NAME = 'SNTG Live AI Workshop (Telugu)';
 const SENDER_NAME   = 'SNTG AI Workshop';
-const WORKSHOP_HOURS = 3;
+const WORKSHOP_HOURS = 2;   // 10 AM – 12 PM
 
 const LEADS_SHEET    = 'Leads';
 const PAYMENTS_SHEET = 'Payments';
@@ -43,7 +43,7 @@ const COL = { name: 4, email: 5, phone: 6, status: 8 };   // 1-based columns in 
 
 // Settings tab: label → default value. Edit the values in the sheet, not here.
 const SETTINGS = {
-  date:      ['Workshop date & time (IST, yyyy-mm-dd hh:mm)', '2026-11-14 11:00'],
+  date:      ['Workshop date & time (IST, yyyy-mm-dd hh:mm)', '2026-11-22 10:00'],
   live:      ['Live link (Zoom / Meet)', ''],
   community: ['WhatsApp community link', 'https://chat.whatsapp.com/KUMcVB1BMy64Pvjbu79zj0'],
   feedback:  ['Feedback / bonus link', ''],
@@ -84,6 +84,7 @@ function onOpen() {
       .addItem('Send due messages now', 'runMessages')
       .addItem('Send all 4 test messages to me', 'sendTestToMe')
       .addItem('Resend already-sent emails to all buyers', 'resendToAllBuyers')
+      .addItem('Send all 4 test messages to the latest form entry', 'sendTestToLatestLead')
       .addToUi();
   } catch (err) { /* not opened from the sheet */ }
 }
@@ -250,7 +251,9 @@ function message_(key, b, s, start) {
     ? '<p>నమస్కారం <b>' + escape_(fullName) + '</b> గారు 🙏<br>Dear <b>' + escape_(fullName) + '</b>,</p>'
     : '<p>నమస్కారం 🙏</p>';
   const who = fullName ? fullName + ', ' : '';
-  const when = Utilities.formatDate(start, 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a") + ' IST';
+  const end = new Date(start.getTime() + WORKSHOP_HOURS * HOUR);
+  const when = Utilities.formatDate(start, 'Asia/Kolkata', "EEEE, d MMMM yyyy, h:mm a") + ' – ' +
+               Utilities.formatDate(end, 'Asia/Kolkata', 'h:mm a') + ' IST';
   const time = Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
   const button = (url, label, color) => '<p style="margin:22px 0"><a href="' + escape_(url) +
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
@@ -365,6 +368,24 @@ function resendToAllBuyers() {
   runMessages();   // re-sends whatever is due now (the welcome always is)
   console.log('Cleared ' + cleared + ' sent stamps and re-sent due messages.');
   return cleared;
+}
+
+/**
+ * Sends all four messages to the most recent person in the Leads tab, using the name and
+ * email they typed on the website. For testing with your own form entry. Changes nothing.
+ */
+function sendTestToLatestLead() {
+  const sh = ss_().getSheetByName(LEADS_SHEET);
+  if (!sh || sh.getLastRow() < 2) throw new Error('No form entries in the Leads tab yet.');
+  const r = sh.getRange(sh.getLastRow(), 1, 1, 4).getValues()[0];   // time, name, whatsapp, email
+  const lead = { name: String(r[1] || '').trim(), phone: String(r[2] || ''), email: String(r[3] || '').trim() };
+  if (!lead.email) throw new Error('The latest form entry has no email.');
+  const s = settings_();
+  const start = parseIST_(s.date) || new Date(Date.now() + 24 * HOUR);
+  const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
+  const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
+  console.log('Sent to ' + lead.name + ' <' + lead.email + '>\n' + out.join('\n'));
+  return out;
 }
 
 /* ================= WhatsApp (Meta Cloud API) ================= */

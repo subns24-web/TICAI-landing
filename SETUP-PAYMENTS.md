@@ -97,13 +97,13 @@ four "…sent" columns to **Payments**, and one 5-minute timer that does everyth
 | Welcome + community link | as soon as the payment is verified | ✅ | `sntg_welcome` |
 | Reminder | evening before (16 h before start) | ✅ | `sntg_reminder` |
 | Live link | 1 hour before start | ✅ | `sntg_live_link` |
-| Thank-you + feedback | 30 min after the 3-hour workshop | ✅ | `sntg_thank_you` |
+| Thank-you + feedback | 30 min after the workshop ends (12:30 PM) | ✅ | `sntg_thank_you` |
 
 **Settings tab — fill these before each batch:**
 
 | Setting | Example |
 |---|---|
-| Workshop date & time (IST, yyyy-mm-dd hh:mm) | `2026-11-14 11:00` |
+| Workshop date & time (IST, yyyy-mm-dd hh:mm) | `2026-11-22 10:00` |
 | Live link (Zoom / Meet) | `https://meet.google.com/abc-defg-hij` — if empty when it's due, you get a ⚠️ email |
 | WhatsApp community link | already filled |
 | Feedback / bonus link | a Google Form or Drive folder (optional) |
@@ -113,11 +113,11 @@ four "…sent" columns to **Payments**, and one 5-minute timer that does everyth
 **Rules**
 - Only rows whose **Status** is `captured` (verified by Razorpay) or `VERIFIED` (typed by you) get messages.
   Without Razorpay keys every payment is `UNVERIFIED` — check it in Razorpay, then type `VERIFIED`.
-- Each send is stamped in the row, e.g. `14 Nov 10:10 · Email ✓ · WA ✓`. **Clear the cell to resend.**
+- Each send is stamped in the row, e.g. `22 Nov 09:05 · Email ✓ · WA ✓`. **Clear the cell to resend.**
 - **Test first:** run `sendTestToMe` (or menu **SNTG → Send all 4 test messages to me**) — all four
   messages go to subns24@gmail.com and your WhatsApp from Settings; the sheet isn't changed.
 - Moving to the next batch: change the date, clear the live link, and start a fresh Payments tab
-  (rename the old one, e.g. `Payments 14 Nov`; `setup` creates a new empty one).
+  (rename the old one, e.g. `Payments 22 Nov`; `setup` creates a new empty one).
 
 Emails work immediately. **WhatsApp stays off** (`WA off` in the stamps) until you finish 7a–7c.
 
@@ -166,7 +166,7 @@ Then run **`sendTestToMe`**. You should get 4 emails and 4 WhatsApp messages. If
 |---|---|---|
 | `OWNER_EMAIL` | `subns24@gmail.com` | Who gets the "new payment" and "add live link" emails; reply-to on buyer emails |
 | `AMOUNT_PAISE` | `19900` | Only ₹199 payments are recorded. Change if the price changes |
-| `WORKSHOP_HOURS` | `3` | Workshop length — the thank-you goes 30 min after it ends |
+| `WORKSHOP_HOURS` | `2` | Workshop length (10 AM – 12 PM) — the thank-you goes 30 min after it ends |
 
 Gmail limit for scripts: **about 100 emails/day** on a free Google account (1,500 on Google Workspace).
 Each buyer gets 4 emails spread over several days, so this covers ~100 new buyers a day. If the limit
