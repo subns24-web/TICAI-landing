@@ -58,6 +58,8 @@ const SETTINGS = {
   ownerWa:   ['Your WhatsApp number (for test messages)', ''],
   enabled:   ['Send messages to buyers (ON / OFF)', 'ON'],
   testing:   ['Testing: email every payment, even repeats by the same person (ON / OFF)', 'ON']
+  // While Testing is ON, each NEW payment also gets the reminder, live-link and thank-you emails
+  // immediately, and subns24@gmail.com gets a copy (BCC) of every buyer email.
 };
 
 const HOUR = 3600 * 1000, MIN = 60 * 1000;
@@ -297,7 +299,10 @@ function runMessages() {
       const r = rows[i];
       const status = String(r[COL.status - 1]).trim().toLowerCase();
       if (status !== 'captured') continue;   // confirmed by Razorpay only
-      const due = STAGES.filter(st => r[st.col - 1] === '' && st.due(now, start.getTime()));
+      const testingNow = String(s.testing).trim().toUpperCase() === 'ON';
+      // Testing: a new payment (welcome not sent yet) gets all four emails immediately.
+      const allNow = testingNow && r[STAGES[0].col - 1] === '';
+      const due = STAGES.filter(st => r[st.col - 1] === '' && (allNow || st.due(now, start.getTime())));
       if (!due.length) continue;
 
       // Re-confirm with Razorpay before messaging: a refunded payment gets nothing more.
@@ -324,12 +329,13 @@ function runMessages() {
       }
 
       for (const st of due) {
-        if (st.key === 'live' && !s.live) { alertMissingLiveLink_(); continue; }
+        if (st.key === 'live' && !s.live && !allNow) { alertMissingLiveLink_(); continue; }
         const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
         const testing = String(s.testing).trim().toUpperCase() === 'ON';
         if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
-        const result = sendStage_(st.key, buyer, s, start);
+        const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
+        const result = sendStage_(st.key, buyer, sSend, start);
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
         if (k) sentTo[st.key][k] = true;
@@ -347,8 +353,11 @@ function sendStage_(key, buyer, s, start) {
 
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(buyer.email)) {
     try {
-      MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
-                          subject: m.subject, htmlBody: emailLayout_(m.html) });
+      const opts = { to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
+                     subject: m.subject, htmlBody: emailLayout_(m.html) };
+      // Testing: you get a copy of every email a buyer receives.
+      if (String(s.testing).trim().toUpperCase() === 'ON' && buyer.email.toLowerCase() !== OWNER_EMAIL) opts.bcc = OWNER_EMAIL;
+      MailApp.sendEmail(opts);
       parts.push('Email ✓');
     } catch (err) { parts.push('Email ✗ ' + err.message); }
   } else {
@@ -579,7 +588,7 @@ function notifyOwner_(p, name, email, phone, via) {
              escape_(r[1] || '—') + '</b></td></tr>').join('');
   MailApp.sendEmail({
     to: OWNER_EMAIL,
-    subject: '✅ New ₹199 workshop payment — ' + (name || email || phone || p.id),
+    subject: '✅ New ₹' + (p.amount / 100) + ' workshop payment — ' + (name || email || phone || p.id),
     htmlBody: '<p>Razorpay confirmed a successful payment for the ' + WORKSHOP_NAME +
               '. The buyer\'s welcome email is on its way.</p>' +
               '<table>' + rows + '</table>' +
