@@ -98,6 +98,20 @@ function tick() {
 
 /* ================= one-time updates (run automatically by the timer) ================= */
 
+/**
+ * Sets the sheet's timezone to IST and re-saves the existing timestamps (column A of
+ * Leads and Payments) so rows written while the sheet was on GMT also show India time.
+ */
+function switchSheetToIST_() {
+  const ss = ss_();
+  const cols = [LEADS_SHEET, PAYMENTS_SHEET].map(n => ss.getSheetByName(n)).filter(sh => sh && sh.getLastRow() > 1)
+    .map(sh => ({ range: sh.getRange(2, 1, sh.getLastRow() - 1, 1) }));
+  cols.forEach(c => c.values = c.range.getValues());          // read as real moments in time (old zone)
+  ss.setSpreadsheetTimeZone('Asia/Kolkata');
+  cols.forEach(c => c.range.setValues(c.values));             // write back: now shown in IST
+  SpreadsheetApp.flush();
+}
+
 // Test emails go here once, addressed by the name this email typed on the website.
 const ONE_TIME_TEST_EMAIL = 'priyankka.156@gmail.com';
 
@@ -109,11 +123,14 @@ const ONE_TIME_TEST_EMAIL = 'priyankka.156@gmail.com';
 function oneTimeUpdates_() {
   const props = PropertiesService.getScriptProperties();
 
+  // Show every time in the sheet in India time (it was created on GMT).
+  if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
+
   if (!props.getProperty('DONE_DATE_2026_11_22')) {
     const sh = ensureSettings_();
     const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
     rows.forEach((r, i) => {
-      const v = r[1] instanceof Date ? Utilities.formatDate(r[1], 'Asia/Kolkata', 'yyyy-MM-dd HH:mm') : String(r[1]).trim();
+      const v = isDate_(r[1]) ? Utilities.formatDate(r[1], ss_().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm') : String(r[1]).trim();
       if (r[0] === SETTINGS.date[0] && (v === '' || v === '2026-11-14 11:00')) {
         sh.getRange(i + 2, 2).setValue('2026-11-22 10:00');
       }
@@ -121,12 +138,12 @@ function oneTimeUpdates_() {
     props.setProperty('DONE_DATE_2026_11_22', new Date().toISOString());
   }
 
-  if (!props.getProperty('DONE_TEST_EMAILS_V2')) {
-    props.setProperty('DONE_TEST_EMAILS_V2', new Date().toISOString());   // set first: never sends twice
+  if (!props.getProperty('DONE_TEST_EMAILS_V3')) {
+    props.setProperty('DONE_TEST_EMAILS_V3', new Date().toISOString());   // set first: never sends twice
     const lead = findLead_(ONE_TIME_TEST_EMAIL, '') || { name: '', phone: '', email: ONE_TIME_TEST_EMAIL };
     lead.email = ONE_TIME_TEST_EMAIL;
     const s = settings_();
-    const start = parseIST_(s.date) || new Date(Date.now() + 24 * HOUR);
+    const start = workshopStart_(s);
     const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
     const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
     MailApp.sendEmail(OWNER_EMAIL, 'SNTG: script updated ✅ test emails sent',
@@ -215,8 +232,7 @@ function alreadyRecorded_(sh, paymentId) {
 function runMessages() {
   const s = settings_();
   if (String(s.enabled).trim().toUpperCase() === 'OFF') return;
-  const start = parseIST_(s.date);
-  if (!start) { console.error('Workshop date in Settings is not readable: ' + s.date); return; }
+  const start = workshopStart_(s);
 
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -292,14 +308,13 @@ function message_(key, b, s, start) {
     ? '<p>నమస్కారం <b>' + escape_(fullName) + '</b> గారు 🙏<br>Dear <b>' + escape_(fullName) + '</b>,</p>'
     : '<p>నమస్కారం 🙏</p>';
   const who = fullName ? fullName + ', ' : '';
-  const end = new Date(start.getTime() + WORKSHOP_HOURS * HOUR);
   const day = Number(Utilities.formatDate(start, 'Asia/Kolkata', 'd'));
   const suffix = (day % 100 >= 11 && day % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th');
   const time = Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
-  // e.g. "Sunday, 22nd November 2026 · 10:00 AM IST (till 12:00 PM)"
+  // e.g. "Sunday, 22nd November 2026 · 10:00 AM IST"
   const when = Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE') + ', ' + day + suffix + ' ' +
                Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' · ' + time +
-               ' (till ' + Utilities.formatDate(end, 'Asia/Kolkata', 'h:mm a') + ')';
+               '';
   const button = (url, label, color) => '<p style="margin:22px 0"><a href="' + escape_(url) +
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
     label + '</a></p>';
@@ -333,7 +348,8 @@ function message_(key, b, s, start) {
     };
     case 'thanks': return {
       subject: '🙏 Thank you for joining, ' + (fullName || 'friend') + ' — ' + WORKSHOP_NAME,
-      html: hi + '<p>Thank you for attending! We hope you are already using AI in your business.</p>' +
+      html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
+            '<p>Thank you for attending! We hope you are already using AI in your business.</p>' +
             (s.feedback ? '<p>Please share your feedback and get your bonus files here:</p>' +
                           button(s.feedback, 'Feedback & bonus files', '#004AAD') : '') +
             '<p>Stay in the community for tips and updates:</p>' +
@@ -363,7 +379,7 @@ function alertMissingLiveLink_() {
 /** Sends all four messages to you (OWNER_EMAIL + your WhatsApp from Settings). Changes nothing in the sheet. */
 function sendTestToMe() {
   const s = settings_();
-  const start = parseIST_(s.date) || new Date(Date.now() + 24 * HOUR);
+  const start = workshopStart_(s);
   const me = { name: 'Test', email: OWNER_EMAIL, phone: String(s.ownerWa || '') };
   const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, me, sTest, start));
@@ -427,7 +443,7 @@ function sendTestToLatestLead() {
   const lead = { name: String(r[1] || '').trim(), phone: String(r[2] || ''), email: String(r[3] || '').trim() };
   if (!lead.email) throw new Error('The latest form entry has no email.');
   const s = settings_();
-  const start = parseIST_(s.date) || new Date(Date.now() + 24 * HOUR);
+  const start = workshopStart_(s);
   const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
   console.log('Sent to ' + lead.name + ' <' + lead.email + '>\n' + out.join('\n'));
@@ -554,9 +570,11 @@ function settings_() {
   const out = {};
   Object.keys(SETTINGS).forEach(k => {
     const v = byLabel[SETTINGS[k][0]];
-    out[k] = (v instanceof Date) ? v : String(v == null ? '' : v).trim();
+    out[k] = isDate_(v) ? v : String(v == null ? '' : v).trim();
     if (k === 'date') {
-      const txt = (v instanceof Date) ? Utilities.formatDate(v, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm') : out[k];
+      // If Sheets turned the text into a date, read the time exactly as shown in the sheet, as IST.
+      const txt = isDate_(v) ? Utilities.formatDate(v, ss_().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm') : out[k];
+      out[k] = txt;
       if (!txt || txt === '2026-11-14 11:00') out[k] = SETTINGS.date[1];   // old batch → 22 Nov 10:00
     }
   });
@@ -580,9 +598,21 @@ function ensureSettings_() {
   return sh;
 }
 
+/** Workshop start from Settings; if that cell can't be read, the batch date in this file (never "now"). */
+function workshopStart_(s) {
+  const d = parseIST_(s.date);
+  if (d) return d;
+  console.error('Workshop date in Settings is not readable (' + s.date + '); using ' + SETTINGS.date[1] + ' IST.');
+  return parseIST_(SETTINGS.date[1]);
+}
+
+function isDate_(v) {
+  return Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v.getTime());
+}
+
 /** Accepts a Date or "yyyy-mm-dd hh:mm" (read as India time). */
 function parseIST_(v) {
-  if (v instanceof Date) return v;
+  if (isDate_(v)) return v;
   const m = String(v || '').match(/(\d{4})-(\d{1,2})-(\d{1,2})[ T]+(\d{1,2}):(\d{2})/);
   if (!m) return null;
   return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 330 * MIN);
@@ -602,6 +632,7 @@ function escape_(v) {
 /* ================= one-time setup: run this from the editor ================= */
 
 function setup() {
+  if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
   const first = ss_().getSheets()[0];
   if (!ss_().getSheetByName(LEADS_SHEET) && first.getRange('A1').getValue() === LEAD_HEADERS[0]) {
     first.setName(LEADS_SHEET).setFrozenRows(1);
