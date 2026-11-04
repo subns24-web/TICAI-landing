@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
+<script>
+/* If Razorpay sent the buyer to a test copy of this page (e.g. raw.githack.com),
+   forward them straight to the live site, keeping the payment ID in the URL. */
+(function(){
+  var LIVE = 'https://sntg-ai-workshop.vercel.app/success.html';
+  var h = location.hostname;
+  if (/(^|\.)githack\.com$|(^|\.)rawgit\.com$|(^|\.)github(usercontent)?\.(com|io)$/.test(h)) {
+    location.replace(LIVE + location.search + location.hash);
+  }
+})();
+</script>
 <title>Payment Successful | SNTG AI Workshop</title>
 <link rel="icon" href="sntg-logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
