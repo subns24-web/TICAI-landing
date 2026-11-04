@@ -70,7 +70,12 @@ function doPost(e) {
   try {
     const data = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (data.type === 'lead') saveLead_(data);
-    else if (data.type === 'paid') recordPayment_(String(data.payment_id || ''), null, 'success page', data);
+    else if (data.type === 'paid') {
+      const pid = String(data.payment_id || '');
+      if (/^pay_/.test(pid)) recordPayment_(pid, null, 'success page', data);
+      else if (hasKeys_()) checkRecentPayments();          // ask Razorpay right away
+      else recordWithoutId_(data);                          // no ID, no keys: save for you to verify
+    }
   } catch (err) {
     console.error(err);
   }
@@ -218,6 +223,41 @@ function recordPayment_(paymentId, payment, via, hint) {
     lock.releaseLock();
   }
   if (recorded) runMessages();   // send the welcome straight away
+}
+
+/**
+ * Success page reached but Razorpay gave no payment ID and there are no API keys to ask.
+ * Saves the buyer (from what they typed on the website) as UNVERIFIED and emails you to
+ * check Razorpay. Typing VERIFIED in the Status cell starts their emails.
+ * Ignores a repeat from the same email/phone within 30 minutes.
+ */
+function recordWithoutId_(d) {
+  const lead = findLead_(d.email, d.phone) || {};
+  const name = d.name || lead.name || '', email = d.email || lead.email || '', phone = d.phone || lead.phone || '';
+  if (!email && !phone) return;
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    const last = sh.getLastRow();
+    if (last >= 2) {
+      const recent = Date.now() - 30 * MIN;
+      const dup = sh.getRange(2, 1, last - 1, PAYMENT_HEADERS.length).getValues().some(r =>
+        isDate_(r[0]) && r[0].getTime() > recent &&
+        ((email && String(r[COL.email - 1]).toLowerCase() === email.toLowerCase()) ||
+         (phone && String(r[COL.phone - 1]).replace(/\D/g, '').slice(-10) === String(phone).replace(/\D/g, '').slice(-10))));
+      if (dup) return;
+    }
+    const p = { id: '(no ID from Razorpay)', status: 'UNVERIFIED', amount: AMOUNT_PAISE, method: '',
+                created_at: Math.floor(Date.now() / 1000), notes: {} };
+    sh.appendRow([new Date(), p.id, AMOUNT_PAISE / 100, clean_(name), clean_(email), clean_(phone),
+                  '', p.status, 'success page (no payment ID)', '', '', '', '', '']);
+    SpreadsheetApp.flush();
+    notifyOwner_(p, name, email, phone, 'success page — Razorpay sent no payment ID');
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function alreadyRecorded_(sh, paymentId) {
