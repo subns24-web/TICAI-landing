@@ -91,8 +91,49 @@ function onOpen() {
 
 /** Runs every 5 minutes (installed by setup()). */
 function tick() {
+  try { oneTimeUpdates_(); } catch (err) { console.error(err); }
   try { checkRecentPayments(); } catch (err) { console.error(err); }
   runMessages();
+}
+
+/* ================= one-time updates (run automatically by the timer) ================= */
+
+// Test emails go here once, addressed by the name this email typed on the website.
+const ONE_TIME_TEST_EMAIL = 'priyankka.156@gmail.com';
+
+/**
+ * Runs each update once, the first time the timer fires after this code is saved:
+ *  1. moves the Settings date from the old batch (14 Nov 11:00) to 22 Nov 10:00
+ *  2. sends the four test emails to ONE_TIME_TEST_EMAIL with the name from the Leads tab
+ */
+function oneTimeUpdates_() {
+  const props = PropertiesService.getScriptProperties();
+
+  if (!props.getProperty('DONE_DATE_2026_11_22')) {
+    const sh = ensureSettings_();
+    const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
+    rows.forEach((r, i) => {
+      const v = r[1] instanceof Date ? Utilities.formatDate(r[1], 'Asia/Kolkata', 'yyyy-MM-dd HH:mm') : String(r[1]).trim();
+      if (r[0] === SETTINGS.date[0] && (v === '' || v === '2026-11-14 11:00')) {
+        sh.getRange(i + 2, 2).setValue('2026-11-22 10:00');
+      }
+    });
+    props.setProperty('DONE_DATE_2026_11_22', new Date().toISOString());
+  }
+
+  if (!props.getProperty('DONE_TEST_EMAILS_V1')) {
+    props.setProperty('DONE_TEST_EMAILS_V1', new Date().toISOString());   // set first: never sends twice
+    const lead = findLead_(ONE_TIME_TEST_EMAIL, '') || { name: '', phone: '', email: ONE_TIME_TEST_EMAIL };
+    lead.email = ONE_TIME_TEST_EMAIL;
+    const s = settings_();
+    const start = parseIST_(s.date) || new Date(Date.now() + 24 * HOUR);
+    const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
+    const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
+    MailApp.sendEmail(OWNER_EMAIL, 'SNTG: script updated ✅ test emails sent',
+      'The new script is running.\n\nWorkshop date in Settings: ' + settings_().date +
+      '\nTest emails sent to ' + (lead.name || '(no name)') + ' <' + lead.email + '>:\n' + out.join('\n') +
+      '\n\nSheet: ' + ss_().getUrl());
+  }
 }
 
 /* ================= leads ================= */
