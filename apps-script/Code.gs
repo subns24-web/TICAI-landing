@@ -48,7 +48,8 @@ const SETTINGS = {
   community: ['WhatsApp community link', 'https://chat.whatsapp.com/KUMcVB1BMy64Pvjbu79zj0'],
   feedback:  ['Feedback / bonus link', ''],
   ownerWa:   ['Your WhatsApp number (for test messages)', ''],
-  enabled:   ['Send messages to buyers (ON / OFF)', 'ON']
+  enabled:   ['Send messages to buyers (ON / OFF)', 'ON'],
+  testing:   ['Testing: email every payment, even repeats by the same person (ON / OFF)', 'ON']
 };
 
 const HOUR = 3600 * 1000, MIN = 60 * 1000;
@@ -317,7 +318,8 @@ function runMessages() {
       for (const st of due) {
         if (st.key === 'live' && !s.live) { alertMissingLiveLink_(); continue; }
         const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
-        if (k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
+        const testing = String(s.testing).trim().toUpperCase() === 'ON';
+        if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
         const result = sendStage_(st.key, buyer, s, start);
         sh.getRange(i + 2, st.col).setValue(result);
