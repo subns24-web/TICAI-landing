@@ -648,6 +648,53 @@ function escape_(v) {
   return String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+/* ================= health check: run this to see what's working ================= */
+
+/**
+ * Prints a plain-language status report in the Execution log. Changes nothing, sends nothing.
+ * Never prints the Razorpay secret.
+ */
+function checkSetup() {
+  const lines = [];
+  const ok = (good, text) => lines.push((good ? '✅ ' : '❌ ') + text);
+  const props = PropertiesService.getScriptProperties();
+
+  try { ok(true, 'Sheet opens: ' + ss_().getName() + ' (timezone ' + ss_().getSpreadsheetTimeZone() + ')'); }
+  catch (e) { ok(false, 'Cannot open the sheet: ' + e.message); }
+
+  try { const s = settings_(); ok(true, 'Workshop date used in emails: ' + Utilities.formatDate(workshopStart_(s), 'Asia/Kolkata', "EEEE, d MMMM yyyy, h:mm a") + ' IST'); }
+  catch (e) { ok(false, 'Settings tab: ' + e.message); }
+
+  const id = props.getProperty('RAZORPAY_KEY_ID') || '';
+  const secret = props.getProperty('RAZORPAY_KEY_SECRET') || '';
+  ok(!!id, id ? 'RAZORPAY_KEY_ID is set (' + id.slice(0, 13) + '…)' : 'RAZORPAY_KEY_ID is missing in Script properties');
+  ok(!!secret, secret ? 'RAZORPAY_KEY_SECRET is set (hidden)' : 'RAZORPAY_KEY_SECRET is missing in Script properties');
+  if (id && !/^rzp_(live|test)_/.test(id)) ok(false, 'RAZORPAY_KEY_ID should start with rzp_live_ (check for spaces)');
+  if (id.startsWith('rzp_test_')) ok(false, 'This is a TEST key: real (live) payments will not be seen. Use the rzp_live_ key.');
+
+  if (id && secret) {
+    try {
+      const res = razorpay_('/v1/payments?count=100&from=' + (Math.floor(Date.now() / 1000) - 7 * 24 * 3600));
+      const items = res.items || [];
+      const good = items.filter(p => p.status === 'captured' && p.amount === AMOUNT_PAISE);
+      ok(true, 'Razorpay connection works. Last 7 days: ' + items.length + ' payments, ' + good.length + ' successful ₹199');
+      good.slice(0, 10).forEach(p => lines.push('     • ' + p.id + '  ' + (p.email || '') + '  ' + (p.contact || '') + '  ' +
+        Utilities.formatDate(new Date(p.created_at * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST'));
+    } catch (e) {
+      ok(false, 'Razorpay refused the keys: ' + String(e.message).slice(0, 160) + '  (401 = wrong ID/secret pair)');
+    }
+  }
+
+  const triggers = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction());
+  ok(triggers.indexOf('tick') !== -1, 'Timer: ' + (triggers.length ? triggers.join(', ') : 'none — run setup once'));
+  const last = props.getProperty('LAST_RAZORPAY_CHECK');
+  lines.push('ℹ️ Last Razorpay check: ' + (last ? Utilities.formatDate(new Date(Number(last) * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST' : 'never'));
+  lines.push('ℹ️ Emails left today: ' + MailApp.getRemainingDailyQuota());
+
+  console.log(lines.join('\n'));
+  return lines.join('\n');
+}
+
 /* ================= one-time setup: run this from the editor ================= */
 
 function setup() {
@@ -660,11 +707,12 @@ function setup() {
   sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
   ensureSettings_();
 
-  // One 5-minute timer that checks payments and sends due messages.
-  ScriptApp.getProjectTriggers()
-    .filter(t => ['checkRecentPayments', 'tick'].indexOf(t.getHandlerFunction()) !== -1)
-    .forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('tick').timeBased().everyMinutes(5).create();
+  // One 5-minute timer that checks payments and sends due messages (kept if it already exists).
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.filter(t => t.getHandlerFunction() === 'checkRecentPayments').forEach(t => ScriptApp.deleteTrigger(t));
+  if (!triggers.some(t => t.getHandlerFunction() === 'tick')) {
+    ScriptApp.newTrigger('tick').timeBased().everyMinutes(5).create();
+  }
 
   const notes = [];
   if (hasKeys_()) { razorpay_('/v1/payments?count=1'); notes.push('Razorpay keys OK'); }
