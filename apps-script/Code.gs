@@ -28,6 +28,14 @@ const SHEET_ID = '1CpZI9srdFq_H44pJv5SK3QQb0XymaVMFGnKNnRvvlUg';
 
 const OWNER_EMAIL   = 'subns24@gmail.com';
 const AMOUNT_PAISE  = 19900;   // ₹199 — only payments of exactly this amount are recorded
+const TEST_AMOUNT_PAISE = 100; // ₹1 — also accepted while the Settings "Testing" switch is ON
+
+/** ₹199, or ₹1 while testing. */
+function isWorkshopAmount_(paise) {
+  if (paise === AMOUNT_PAISE) return true;
+  if (paise !== TEST_AMOUNT_PAISE) return false;
+  try { return String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) { return false; }
+}
 const WORKSHOP_NAME = 'SNTG Live AI Workshop (Telugu)';
 const SENDER_NAME   = 'SNTG AI Workshop';
 const WORKSHOP_HOURS = 2;   // 10 AM – 12 PM
@@ -219,7 +227,7 @@ function recordPayment_(paymentId, payment, via, hint) {
 
     if (!payment && !hasKeys_()) return;                 // can't confirm with Razorpay
     const p = payment || razorpay_('/v1/payments/' + paymentId);
-    if (p.status !== 'captured' || p.amount !== AMOUNT_PAISE) return;   // only successful ₹199 payments
+    if (p.status !== 'captured' || !isWorkshopAmount_(p.amount)) return;   // only successful ₹199 (₹1 while testing)
 
     const notes = p.notes || {};
     let email = p.email || notes.email || (hint && hint.email) || '';
@@ -713,7 +721,7 @@ function checkSetup() {
     try {
       const res = razorpay_('/v1/payments?count=100&from=' + (Math.floor(Date.now() / 1000) - 7 * 24 * 3600));
       const items = res.items || [];
-      const good = items.filter(p => p.status === 'captured' && p.amount === AMOUNT_PAISE);
+      const good = items.filter(p => p.status === 'captured' && isWorkshopAmount_(p.amount));
       ok(true, 'Razorpay connection works. Last 7 days: ' + items.length + ' payments, ' + good.length + ' successful ₹199');
       good.slice(0, 10).forEach(p => lines.push('     • ' + p.id + '  ' + (p.email || '') + '  ' + (p.contact || '') + '  ' +
         Utilities.formatDate(new Date(p.created_at * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST'));
