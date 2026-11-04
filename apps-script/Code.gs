@@ -334,8 +334,12 @@ function runMessages() {
         const testing = String(s.testing).trim().toUpperCase() === 'ON';
         if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
+        // Testing preview of a later email (sent early): don't stamp it, so the real one still
+        // goes at its scheduled time (21 Nov 6 PM reminder, 22 Nov 9 AM live link, 12:30 PM thank-you).
+        const preview = allNow && st.key !== 'welcome' && !st.due(now, start.getTime());
         const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
         const result = sendStage_(st.key, buyer, sSend, start);
+        if (preview) continue;
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
         if (k) sentTo[st.key][k] = true;
