@@ -6,11 +6,11 @@
  *
  * Tabs it manages in the "SNTG Workshop Registrations" sheet:
  *  - Leads     every landing-page form submit (name, WhatsApp, email, business)
- *  - Payments  every ₹199 payment + when each message was sent to that buyer
+ *  - Payments  every ₹199 payment CONFIRMED BY RAZORPAY + when each message was sent
  *  - Settings  workshop date, live link, community link, feedback link, ON/OFF switch
  *
  * Messages to each paid buyer (email always; WhatsApp once Meta Cloud API is set up):
- *  1. Welcome     as soon as the payment is verified
+ *  1. Welcome     as soon as Razorpay confirms the payment (registration confirmed)
  *  2. Reminder    the evening before (16 h before start)
  *  3. Live link   1 hour before start  (needs "Live link" filled in Settings)
  *  4. Thank-you   30 min after the workshop ends (WORKSHOP_HOURS)
@@ -18,7 +18,7 @@
  * buyer's row; clear that cell to send that message again.
  *
  * Script properties (Project Settings → Script properties) — secrets never go in this file:
- *   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET      verify payments with Razorpay (recommended)
+ *   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET      REQUIRED: confirm payments with Razorpay
  *   WA_TOKEN, WA_PHONE_NUMBER_ID              Meta WhatsApp Cloud API (turns WhatsApp on)
  *   WA_TEMPLATE_LANG                          optional, template language code (default "en")
  */
@@ -71,10 +71,11 @@ function doPost(e) {
     const data = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (data.type === 'lead') saveLead_(data);
     else if (data.type === 'paid') {
+      // Reaching the success page proves nothing by itself: only Razorpay's answer counts.
       const pid = String(data.payment_id || '');
-      if (/^pay_/.test(pid)) recordPayment_(pid, null, 'success page', data);
-      else if (hasKeys_()) checkRecentPayments();          // ask Razorpay right away
-      else recordWithoutId_(data);                          // no ID, no keys: save for you to verify
+      if (!hasKeys_()) alertMissingKeys_();
+      else if (/^pay_/.test(pid)) recordPayment_(pid, null, 'success page', data);
+      else checkRecentPayments();                           // no ID in the redirect: ask Razorpay now
     }
   } catch (err) {
     console.error(err);
@@ -173,15 +174,37 @@ function saveLead_(d) {
 /** Looks at the last 2 hours of Razorpay payments (only when API keys are set). */
 function checkRecentPayments() {
   if (!hasKeys_()) return;
-  const from = Math.floor(Date.now() / 1000) - 2 * 60 * 60;
-  const res = razorpay_('/v1/payments?count=100&from=' + from);
-  (res.items || []).forEach(p => recordPayment_(p.id, p, 'auto-check', null));
+  const props = PropertiesService.getScriptProperties();
+  const now = Math.floor(Date.now() / 1000);
+  const lastRun = Number(props.getProperty('LAST_RAZORPAY_CHECK') || 0);
+  // From 2 h before the last check (overlap is safe: duplicates are skipped); first run: last 7 days.
+  let from = lastRun ? lastRun - 2 * 3600 : now - 7 * 24 * 3600;
+  for (let page = 0; page < 10; page++) {
+    const res = razorpay_('/v1/payments?count=100&from=' + from + '&to=' + now + '&skip=' + page * 100);
+    const items = res.items || [];
+    items.forEach(p => recordPayment_(p.id, p, 'Razorpay', null));
+    if (items.length < 100) break;
+  }
+  props.setProperty('LAST_RAZORPAY_CHECK', String(now));
+}
+
+/** Emails you (once a day) that payments can't be confirmed until the Razorpay keys are added. */
+function alertMissingKeys_() {
+  const props = PropertiesService.getScriptProperties();
+  const today = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+  if (props.getProperty('KEYS_ALERT') === today) return;
+  props.setProperty('KEYS_ALERT', today);
+  MailApp.sendEmail(OWNER_EMAIL, '⚠️ A buyer reached the success page — add Razorpay keys to confirm payments',
+    'Someone just reached the payment success page, but the script cannot ask Razorpay whether the payment ' +
+    'succeeded, so nothing was added to the Payments tab and no emails were sent.\n\n' +
+    'Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Apps Script → Project Settings → Script properties. ' +
+    'Within 5 minutes the script then picks up every successful payment from the last 7 days, adds it ' +
+    'to the sheet and sends the welcome email.\n\n' + ss_().getUrl());
 }
 
 /**
- * Records one payment if Razorpay confirms it is captured and for ₹199.
- * Without API keys, success-page payments are saved as UNVERIFIED and get no buyer
- * messages until you type VERIFIED in their Status cell.
+ * Records one payment only if Razorpay confirms it is captured (successful) and for ₹199.
+ * Nothing is recorded without the Razorpay API keys.
  */
 function recordPayment_(paymentId, payment, via, hint) {
   if (!/^pay_[A-Za-z0-9]{6,30}$/.test(paymentId)) return;
@@ -193,14 +216,9 @@ function recordPayment_(paymentId, payment, via, hint) {
     const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
     if (alreadyRecorded_(sh, paymentId)) return;
 
-    let p = payment;
-    if (!p && !hasKeys_()) {
-      p = { id: paymentId, status: 'UNVERIFIED', amount: AMOUNT_PAISE, method: '',
-            created_at: Math.floor(Date.now() / 1000), notes: {} };
-    } else {
-      p = p || razorpay_('/v1/payments/' + paymentId);
-      if (p.status !== 'captured' || p.amount !== AMOUNT_PAISE) return;
-    }
+    if (!payment && !hasKeys_()) return;                 // can't confirm with Razorpay
+    const p = payment || razorpay_('/v1/payments/' + paymentId);
+    if (p.status !== 'captured' || p.amount !== AMOUNT_PAISE) return;   // only successful ₹199 payments
 
     const notes = p.notes || {};
     let email = p.email || notes.email || (hint && hint.email) || '';
@@ -223,41 +241,6 @@ function recordPayment_(paymentId, payment, via, hint) {
     lock.releaseLock();
   }
   if (recorded) runMessages();   // send the welcome straight away
-}
-
-/**
- * Success page reached but Razorpay gave no payment ID and there are no API keys to ask.
- * Saves the buyer (from what they typed on the website) as UNVERIFIED and emails you to
- * check Razorpay. Typing VERIFIED in the Status cell starts their emails.
- * Ignores a repeat from the same email/phone within 30 minutes.
- */
-function recordWithoutId_(d) {
-  const lead = findLead_(d.email, d.phone) || {};
-  const name = d.name || lead.name || '', email = d.email || lead.email || '', phone = d.phone || lead.phone || '';
-  if (!email && !phone) return;
-
-  const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
-    const last = sh.getLastRow();
-    if (last >= 2) {
-      const recent = Date.now() - 30 * MIN;
-      const dup = sh.getRange(2, 1, last - 1, PAYMENT_HEADERS.length).getValues().some(r =>
-        isDate_(r[0]) && r[0].getTime() > recent &&
-        ((email && String(r[COL.email - 1]).toLowerCase() === email.toLowerCase()) ||
-         (phone && String(r[COL.phone - 1]).replace(/\D/g, '').slice(-10) === String(phone).replace(/\D/g, '').slice(-10))));
-      if (dup) return;
-    }
-    const p = { id: '(no ID from Razorpay)', status: 'UNVERIFIED', amount: AMOUNT_PAISE, method: '',
-                created_at: Math.floor(Date.now() / 1000), notes: {} };
-    sh.appendRow([new Date(), p.id, AMOUNT_PAISE / 100, clean_(name), clean_(email), clean_(phone),
-                  '', p.status, 'success page (no payment ID)', '', '', '', '', '']);
-    SpreadsheetApp.flush();
-    notifyOwner_(p, name, email, phone, 'success page — Razorpay sent no payment ID');
-  } finally {
-    lock.releaseLock();
-  }
 }
 
 function alreadyRecorded_(sh, paymentId) {
@@ -286,7 +269,7 @@ function runMessages() {
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       const status = String(r[COL.status - 1]).trim().toLowerCase();
-      if (status !== 'captured' && status !== 'verified') continue;
+      if (status !== 'captured') continue;   // confirmed by Razorpay only
       const buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || ''),
                       phone: String(r[COL.phone - 1] || '') };
       if (!buyer.name || !buyer.email || !buyer.phone) {
@@ -461,7 +444,7 @@ function resendToAllBuyers() {
   let cleared = 0;
   rows.forEach((r, i) => {
     const status = String(r[COL.status - 1]).trim().toLowerCase();
-    if (status !== 'captured' && status !== 'verified') return;
+    if (status !== 'captured') return;
     STAGES.forEach(st => {
       if (r[st.col - 1] !== '') { sh.getRange(i + 2, st.col).setValue(''); cleared++; }
     });
@@ -549,15 +532,11 @@ function notifyOwner_(p, name, email, phone, via) {
     ['Paid at (IST)', when], ['Recorded via', via]
   ].map(r => '<tr><td style="padding:4px 12px 4px 0;color:#47576B">' + r[0] + '</td><td><b>' +
              escape_(r[1] || '—') + '</b></td></tr>').join('');
-  const unverified = p.status === 'UNVERIFIED';
   MailApp.sendEmail({
     to: OWNER_EMAIL,
-    subject: (unverified ? '⚠️ ₹199 payment to verify — ' : '✅ New ₹199 workshop payment — ') +
-             (name || email || phone || p.id),
-    htmlBody: (unverified
-                ? '<p><b>Check this payment ID in the Razorpay dashboard.</b> If it is real, type <b>VERIFIED</b> ' +
-                  'in its Status cell (column H) and the buyer\'s welcome message goes out within 5 minutes.</p>'
-                : '<p>A new seat was paid for the ' + WORKSHOP_NAME + '. The buyer\'s welcome message is on its way.</p>') +
+    subject: '✅ New ₹199 workshop payment — ' + (name || email || phone || p.id),
+    htmlBody: '<p>Razorpay confirmed a successful payment for the ' + WORKSHOP_NAME +
+              '. The buyer\'s welcome email is on its way.</p>' +
               '<table>' + rows + '</table>' +
               '<p><a href="' + ss_().getUrl() + '">Open the sheet</a></p>'
   });
@@ -689,7 +668,7 @@ function setup() {
 
   const notes = [];
   if (hasKeys_()) { razorpay_('/v1/payments?count=1'); notes.push('Razorpay keys OK'); }
-  else notes.push('no Razorpay keys (payments saved as UNVERIFIED)');
+  else notes.push('NO Razorpay keys — payments cannot be confirmed, nothing will be recorded');
   notes.push(waConfigured_() ? 'WhatsApp ON' : 'WhatsApp off (add WA_TOKEN + WA_PHONE_NUMBER_ID)');
   console.log('Setup done: tabs ready, 5-minute timer installed, ' + notes.join(', ') + '.');
   MailApp.sendEmail(OWNER_EMAIL, 'SNTG sheet connected ✅',
