@@ -116,6 +116,40 @@ function tick() {
 /* ================= one-time updates (run automatically by the timer) ================= */
 
 /**
+ * Sends the live-link (Zoom) and thank-you emails NOW to everyone who has paid (Razorpay
+ * "captured"), one of each per person, with a copy to you. These early copies are not
+ * stamped in the sheet, so the scheduled ones still go on 22 Nov 9:00 AM and 12:30 PM IST.
+ * Runs once automatically after this code is saved; can also be run from the editor.
+ */
+function sendLiveAndThanksNow() {
+  const s = settings_();
+  const start = workshopStart_(s);
+  const sSend = Object.assign({}, s, { live: s.live || 'https://zoom.us/', testing: 'ON' });   // ON = copy to you
+  const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+  if (sh.getLastRow() < 2) return [];
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+  const seen = {}, out = [];
+  rows.forEach(r => {
+    if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
+    let buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || '').trim(),
+                  phone: String(r[COL.phone - 1] || '') };
+    if (!buyer.name || !buyer.email) {
+      const lead = findLead_(buyer.email, buyer.phone);
+      if (lead) buyer = { name: buyer.name || lead.name, email: buyer.email || lead.email, phone: buyer.phone || lead.phone };
+    }
+    const key = buyer.email.toLowerCase() || buyer.phone.replace(/\D/g, '').slice(-10);
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    ['live', 'thanks'].forEach(k => {
+      if (MailApp.getRemainingDailyQuota() < 2) return;
+      out.push(k + ' → ' + (buyer.email || buyer.phone) + ': ' + sendStage_(k, buyer, sSend, start));
+    });
+  });
+  console.log(out.join('\n') || 'No paid buyers yet.');
+  return out;
+}
+
+/**
  * Sets the sheet's timezone to IST and re-saves the existing timestamps (column A of
  * Leads and Payments) so rows written while the sheet was on GMT also show India time.
  */
@@ -153,6 +187,11 @@ function oneTimeUpdates_() {
       }
     });
     props.setProperty('DONE_DATE_2026_11_22', new Date().toISOString());
+  }
+
+  if (!props.getProperty('DONE_PREVIEW_LIVE_THANKS_V1')) {
+    props.setProperty('DONE_PREVIEW_LIVE_THANKS_V1', new Date().toISOString());   // set first: never twice
+    sendLiveAndThanksNow();
   }
 
   if (!props.getProperty('DONE_TEST_EMAILS_V3')) {
@@ -420,7 +459,7 @@ function message_(key, b, s, start) {
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
     case 'live': return {
-      subject: '🔴 ' + who + 'we start at ' + time + ' today — your live link',
+      subject: '🔴 ' + who + 'your live link — ' + when,
       html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
             '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
             button(s.live, 'Join the live workshop', '#004AAD') +
