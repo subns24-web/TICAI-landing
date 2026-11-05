@@ -189,6 +189,22 @@ function oneTimeUpdates_() {
     props.setProperty('DONE_DATE_2026_11_22', new Date().toISOString());
   }
 
+  // Early test copies sent before a stage opened were stamped by an older version; clear
+  // them once so the real reminder / live link / thank-you still go on schedule.
+  if (!props.getProperty('DONE_CLEAR_EARLY_STAMPS_V1')) {
+    props.setProperty('DONE_CLEAR_EARLY_STAMPS_V1', new Date().toISOString());
+    const start = workshopStart_(settings_()).getTime(), now = Date.now();
+    const opens = { reminder: start - 16 * HOUR, live: start - 60 * MIN,
+                    thanks: start + (WORKSHOP_HOURS + 0.5) * HOUR };
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    if (sh.getLastRow() >= 2) {
+      const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+      rows.forEach((r, i) => STAGES.forEach(st => {
+        if (opens[st.key] && now < opens[st.key] && r[st.col - 1] !== '') sh.getRange(i + 2, st.col).setValue('');
+      }));
+    }
+  }
+
   if (!props.getProperty('DONE_PREVIEW_LIVE_THANKS_V1')) {
     props.setProperty('DONE_PREVIEW_LIVE_THANKS_V1', new Date().toISOString());   // set first: never twice
     sendLiveAndThanksNow();
