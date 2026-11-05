@@ -1338,13 +1338,50 @@ const POPUP_DELAY = 120;   // seconds on page before it fires
 })();
 
 /* ---------- REGISTER (works for every form on the page) ---------- */
-function register(e){
+/* Already paid with this email or phone? (Only answered once the sheet's Testing switch is OFF.)
+   If the check is slow or fails, the visitor simply continues to payment. */
+async function alreadyRegistered(email, phone){
+  if(!SHEET_ENDPOINT) return null;
+  try{
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 4000);
+    const url = SHEET_ENDPOINT + '?action=check&email=' + encodeURIComponent(email) + '&phone=' + encodeURIComponent(phone);
+    const res = await fetch(url, { signal: ctl.signal });
+    clearTimeout(t);
+    const data = await res.json();
+    return data && data.registered ? data : null;
+  }catch(err){ return null; }
+}
+
+function showAlreadyRegistered(form, te){
+  let box = form.parentNode.querySelector('.already-reg');
+  if(!box){
+    box = document.createElement('div');
+    box.className = 'already-reg';
+    box.setAttribute('role', 'status');
+    box.style.cssText = 'margin:14px 0 4px;padding:14px 16px;border-radius:12px;background:#E9F9EF;border:1px solid #BDEBCD;color:#0B5A31;font-size:.92rem;line-height:1.55';
+    form.insertAdjacentElement('afterend', box);
+  }
+  box.innerHTML = te
+    ? `✅ <b>మీరు ఇప్పటికే ఈ email / phone number తో register అయ్యారు.</b><br>మళ్ళీ payment అవసరం లేదు. Zoom link మరియు WhatsApp community link ఉన్న emails ను మీరు register చేసిన email కి మళ్ళీ పంపాము. Spam / Promotions folder కూడా చూడండి.`
+    : `✅ <b>You have already registered with this email / phone number.</b><br>No need to pay again. We've re-sent the emails with your Zoom link and WhatsApp community link to the email you registered with. Please check Spam / Promotions too.`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function register(e){
   e.preventDefault();
-  try{ sessionStorage.setItem('sntg_registered','1'); }catch(err){}
-  if(typeof closePop === 'function') closePop();
   const f = e.target;
   const g = n => ((f.elements[n] && f.elements[n].value) || '').trim();
   const te = document.documentElement.lang === 'te';
+  const btn = f.querySelector('button[type=submit]');
+  if(btn){ if(btn.dataset.busy) return false; btn.dataset.busy = '1'; btn.style.opacity = '.6'; }
+
+  const reg = await alreadyRegistered(g('email'), g('phone'));
+  if(btn){ delete btn.dataset.busy; btn.style.opacity = ''; }
+  if(reg){ showAlreadyRegistered(f, te); return false; }
+
+  try{ sessionStorage.setItem('sntg_registered','1'); }catch(err){}
+  if(typeof closePop === 'function') closePop();
   const msg = te
     ? `నమస్కారం 🙏 AI Workshop (₹199) కి register చేసుకోవాలి.\n\nపేరు: ${g('name')}\nWhatsApp: ${g('phone')}\nEmail: ${g('email')}\nBusiness: ${g('biz')}`
     : `Hi 🙏 I'd like to register for the ₹199 AI Workshop.\n\nName: ${g('name')}\nWhatsApp: ${g('phone')}\nEmail: ${g('email')}\nBusiness: ${g('biz')}`;

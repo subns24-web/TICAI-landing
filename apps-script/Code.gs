@@ -73,8 +73,58 @@ const STAGES = [
 
 /* ================= web app entry points ================= */
 
-function doGet() {
+function doGet(e) {
+  const q = (e && e.parameter) || {};
+  if (q.action === 'check') {
+    let out = { registered: false };
+    try { out = checkRegistered_(q.email, q.phone); } catch (err) { console.error(err); }
+    return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+  }
   return ContentService.createTextOutput('SNTG sheet endpoint is running.');
+}
+
+/**
+ * Landing form asks: has this email or phone already paid? Only answers "yes" when the
+ * Testing switch is OFF (live). On "yes", re-sends the WhatsApp Community (welcome) and the
+ * Zoom-link emails to the email we have on file — never to whatever was typed — at most
+ * once every 6 hours per person. Only a yes/no goes back to the page.
+ */
+function checkRegistered_(email, phone) {
+  const s = settings_();
+  if (String(s.testing).trim().toUpperCase() === 'ON') return { registered: false };
+  const e = String(email || '').trim().toLowerCase().slice(0, 200);
+  const ph = String(phone || '').replace(/\D/g, '').slice(-10);
+  if (!e && ph.length < 10) return { registered: false };
+
+  const sh = ss_().getSheetByName(PAYMENTS_SHEET);
+  if (!sh || sh.getLastRow() < 2) return { registered: false };
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+  const match = rows.filter(r => String(r[COL.status - 1]).trim().toLowerCase() === 'captured' && (
+      (e && String(r[COL.email - 1]).trim().toLowerCase() === e) ||
+      (ph.length === 10 && String(r[COL.phone - 1]).replace(/\D/g, '').slice(-10) === ph)))
+    .sort((a, b) => (isDate_(b[0]) ? b[0].getTime() : 0) - (isDate_(a[0]) ? a[0].getTime() : 0))[0];
+  if (!match) return { registered: false };
+
+  const buyer = { name: String(match[COL.name - 1] || ''), email: String(match[COL.email - 1] || '').trim(),
+                  phone: String(match[COL.phone - 1] || '') };
+  const key = 'RESENT_' + (buyer.email.toLowerCase() || String(buyer.phone).replace(/\D/g, '').slice(-10));
+  const props = PropertiesService.getScriptProperties();
+  const last = Number(props.getProperty(key) || 0);
+  let resent = false;
+  if (buyer.email && Date.now() - last > 6 * HOUR && MailApp.getRemainingDailyQuota() >= 2) {
+    props.setProperty(key, String(Date.now()));
+    const start = workshopStart_(s);
+    sendStage_('welcome', buyer, s, start);                     // has the WhatsApp Community link
+    if (s.live) sendStage_('live', buyer, s, start);            // Zoom link, once it is in Settings
+    else MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
+      subject: '🔴 Your Zoom link — ' + WORKSHOP_NAME,
+      htmlBody: emailLayout_('<p>నమస్కారం ' + escape_(buyer.name) + ' గారు 🙏</p><p>You are already registered. ' +
+        'The Zoom link will be emailed to you on <b>' +
+        escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a")) +
+        ' IST</b>, one hour before we start.</p>') });
+    resent = true;
+  }
+  return { registered: true, resent: resent };
 }
 
 function doPost(e) {
@@ -116,6 +166,42 @@ function tick() {
 /* ================= one-time updates (run automatically by the timer) ================= */
 
 /**
+ * Sends the live-link (Zoom) and thank-you emails NOW to everyone who has paid (Razorpay
+ * "captured"), one of each per person, with a copy to you. These early copies are not
+ * stamped in the sheet, so the scheduled ones still go on 22 Nov 9:00 AM and 12:30 PM IST.
+ * Runs once automatically after this code is saved; can also be run from the editor.
+ */
+function sendLiveAndThanksNow() {
+  const s = settings_();
+  const start = workshopStart_(s);
+  const sSend = Object.assign({}, s, { live: s.live || 'https://zoom.us/', testing: 'ON' });   // ON = copy to you
+  const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+  if (sh.getLastRow() < 2) return [];
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+  const seen = {}, out = [];
+  rows.forEach(r => {
+    if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
+    // Payments from the last 6 hours get the full set of test emails from runMessages instead.
+    if (isDate_(r[0]) && r[0].getTime() > Date.now() - 6 * HOUR) return;
+    let buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || '').trim(),
+                  phone: String(r[COL.phone - 1] || '') };
+    if (!buyer.name || !buyer.email) {
+      const lead = findLead_(buyer.email, buyer.phone);
+      if (lead) buyer = { name: buyer.name || lead.name, email: buyer.email || lead.email, phone: buyer.phone || lead.phone };
+    }
+    const key = buyer.email.toLowerCase() || buyer.phone.replace(/\D/g, '').slice(-10);
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    ['live', 'thanks'].forEach(k => {
+      if (MailApp.getRemainingDailyQuota() < 2) return;
+      out.push(k + ' → ' + (buyer.email || buyer.phone) + ': ' + sendStage_(k, buyer, sSend, start));
+    });
+  });
+  console.log(out.join('\n') || 'No paid buyers yet.');
+  return out;
+}
+
+/**
  * Sets the sheet's timezone to IST and re-saves the existing timestamps (column A of
  * Leads and Payments) so rows written while the sheet was on GMT also show India time.
  */
@@ -153,6 +239,30 @@ function oneTimeUpdates_() {
       }
     });
     props.setProperty('DONE_DATE_2026_11_22', new Date().toISOString());
+  }
+
+  // Early test copies sent before a stage opened were stamped by an older version; clear
+  // them once so the real reminder / live link / thank-you still go on schedule.
+  if (!props.getProperty('DONE_CLEAR_EARLY_STAMPS_V1')) {
+    props.setProperty('DONE_CLEAR_EARLY_STAMPS_V1', new Date().toISOString());
+    const start = workshopStart_(settings_()).getTime(), now = Date.now();
+    const opens = { reminder: start - 16 * HOUR, live: start - 60 * MIN,
+                    thanks: start + (WORKSHOP_HOURS + 0.5) * HOUR };
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    if (sh.getLastRow() >= 2) {
+      const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+      rows.forEach((r, i) => STAGES.forEach(st => {
+        if (opens[st.key] && now < opens[st.key] && r[st.col - 1] !== '') {
+          sh.getRange(i + 2, st.col).setValue('');
+          if (/^pay_/.test(String(r[1]))) props.setProperty('PREVIEW_' + r[1], String(now));   // already previewed
+        }
+      }));
+    }
+  }
+
+  if (!props.getProperty('DONE_PREVIEW_LIVE_THANKS_V1')) {
+    props.setProperty('DONE_PREVIEW_LIVE_THANKS_V1', new Date().toISOString());   // set first: never twice
+    sendLiveAndThanksNow();
   }
 
   if (!props.getProperty('DONE_TEST_EMAILS_V3')) {
@@ -300,13 +410,17 @@ function runMessages() {
       const status = String(r[COL.status - 1]).trim().toLowerCase();
       if (status !== 'captured') continue;   // confirmed by Razorpay only
       const testingNow = String(s.testing).trim().toUpperCase() === 'ON';
-      // Testing: a new payment (welcome not sent yet) gets all four emails immediately.
-      const allNow = testingNow && r[STAGES[0].col - 1] === '';
+      const pid = String(r[1] || '');
+      // Testing: a payment from the last 6 hours gets all four emails once, right away —
+      // whichever copy of the script recorded it (the published copy may only send the welcome).
+      const props = PropertiesService.getScriptProperties();
+      const paidAt = isDate_(r[0]) ? r[0].getTime() : 0;
+      const allNow = testingNow && /^pay_/.test(pid) && paidAt > now - 6 * HOUR &&
+                     !props.getProperty('PREVIEW_' + pid);
       const due = STAGES.filter(st => r[st.col - 1] === '' && (allNow || st.due(now, start.getTime())));
-      if (!due.length) continue;
+      if (!due.length) { if (allNow) props.setProperty('PREVIEW_' + pid, String(now)); continue; }
 
       // Re-confirm with Razorpay before messaging: a refunded payment gets nothing more.
-      const pid = String(r[1] || '');
       if (hasKeys_() && /^pay_/.test(pid)) {
         try {
           const p = razorpay_('/v1/payments/' + pid);
@@ -334,12 +448,17 @@ function runMessages() {
         const testing = String(s.testing).trim().toUpperCase() === 'ON';
         if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
+        // Testing preview of a later email (sent early): don't stamp it, so the real one still
+        // goes at its scheduled time (21 Nov 6 PM reminder, 22 Nov 9 AM live link, 12:30 PM thank-you).
+        const preview = allNow && st.key !== 'welcome' && !st.due(now, start.getTime());
         const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
         const result = sendStage_(st.key, buyer, sSend, start);
+        if (preview) continue;
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
         if (k) sentTo[st.key][k] = true;
       }
+      if (allNow) props.setProperty('PREVIEW_' + pid, String(now));   // test emails sent once
     }
   } finally {
     lock.releaseLock();
@@ -416,7 +535,7 @@ function message_(key, b, s, start) {
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
     case 'live': return {
-      subject: '🔴 ' + who + 'we start at ' + time + ' today — your live link',
+      subject: '🔴 ' + who + 'your live link — ' + when,
       html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
             '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
             button(s.live, 'Join the live workshop', '#004AAD') +
