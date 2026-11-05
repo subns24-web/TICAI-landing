@@ -131,6 +131,8 @@ function sendLiveAndThanksNow() {
   const seen = {}, out = [];
   rows.forEach(r => {
     if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
+    // Payments from the last 6 hours get the full set of test emails from runMessages instead.
+    if (isDate_(r[0]) && r[0].getTime() > Date.now() - 6 * HOUR) return;
     let buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || '').trim(),
                   phone: String(r[COL.phone - 1] || '') };
     if (!buyer.name || !buyer.email) {
@@ -200,7 +202,10 @@ function oneTimeUpdates_() {
     if (sh.getLastRow() >= 2) {
       const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
       rows.forEach((r, i) => STAGES.forEach(st => {
-        if (opens[st.key] && now < opens[st.key] && r[st.col - 1] !== '') sh.getRange(i + 2, st.col).setValue('');
+        if (opens[st.key] && now < opens[st.key] && r[st.col - 1] !== '') {
+          sh.getRange(i + 2, st.col).setValue('');
+          if (/^pay_/.test(String(r[1]))) props.setProperty('PREVIEW_' + r[1], String(now));   // already previewed
+        }
       }));
     }
   }
@@ -355,13 +360,17 @@ function runMessages() {
       const status = String(r[COL.status - 1]).trim().toLowerCase();
       if (status !== 'captured') continue;   // confirmed by Razorpay only
       const testingNow = String(s.testing).trim().toUpperCase() === 'ON';
-      // Testing: a new payment (welcome not sent yet) gets all four emails immediately.
-      const allNow = testingNow && r[STAGES[0].col - 1] === '';
+      const pid = String(r[1] || '');
+      // Testing: a payment from the last 6 hours gets all four emails once, right away —
+      // whichever copy of the script recorded it (the published copy may only send the welcome).
+      const props = PropertiesService.getScriptProperties();
+      const paidAt = isDate_(r[0]) ? r[0].getTime() : 0;
+      const allNow = testingNow && /^pay_/.test(pid) && paidAt > now - 6 * HOUR &&
+                     !props.getProperty('PREVIEW_' + pid);
       const due = STAGES.filter(st => r[st.col - 1] === '' && (allNow || st.due(now, start.getTime())));
-      if (!due.length) continue;
+      if (!due.length) { if (allNow) props.setProperty('PREVIEW_' + pid, String(now)); continue; }
 
       // Re-confirm with Razorpay before messaging: a refunded payment gets nothing more.
-      const pid = String(r[1] || '');
       if (hasKeys_() && /^pay_/.test(pid)) {
         try {
           const p = razorpay_('/v1/payments/' + pid);
@@ -399,6 +408,7 @@ function runMessages() {
         r[st.col - 1] = result;
         if (k) sentTo[st.key][k] = true;
       }
+      if (allNow) props.setProperty('PREVIEW_' + pid, String(now));   // test emails sent once
     }
   } finally {
     lock.releaseLock();
