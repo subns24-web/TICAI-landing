@@ -73,8 +73,58 @@ const STAGES = [
 
 /* ================= web app entry points ================= */
 
-function doGet() {
+function doGet(e) {
+  const q = (e && e.parameter) || {};
+  if (q.action === 'check') {
+    let out = { registered: false };
+    try { out = checkRegistered_(q.email, q.phone); } catch (err) { console.error(err); }
+    return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+  }
   return ContentService.createTextOutput('SNTG sheet endpoint is running.');
+}
+
+/**
+ * Landing form asks: has this email or phone already paid? Only answers "yes" when the
+ * Testing switch is OFF (live). On "yes", re-sends the WhatsApp Community (welcome) and the
+ * Zoom-link emails to the email we have on file — never to whatever was typed — at most
+ * once every 6 hours per person. Only a yes/no goes back to the page.
+ */
+function checkRegistered_(email, phone) {
+  const s = settings_();
+  if (String(s.testing).trim().toUpperCase() === 'ON') return { registered: false };
+  const e = String(email || '').trim().toLowerCase().slice(0, 200);
+  const ph = String(phone || '').replace(/\D/g, '').slice(-10);
+  if (!e && ph.length < 10) return { registered: false };
+
+  const sh = ss_().getSheetByName(PAYMENTS_SHEET);
+  if (!sh || sh.getLastRow() < 2) return { registered: false };
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+  const match = rows.filter(r => String(r[COL.status - 1]).trim().toLowerCase() === 'captured' && (
+      (e && String(r[COL.email - 1]).trim().toLowerCase() === e) ||
+      (ph.length === 10 && String(r[COL.phone - 1]).replace(/\D/g, '').slice(-10) === ph)))
+    .sort((a, b) => (isDate_(b[0]) ? b[0].getTime() : 0) - (isDate_(a[0]) ? a[0].getTime() : 0))[0];
+  if (!match) return { registered: false };
+
+  const buyer = { name: String(match[COL.name - 1] || ''), email: String(match[COL.email - 1] || '').trim(),
+                  phone: String(match[COL.phone - 1] || '') };
+  const key = 'RESENT_' + (buyer.email.toLowerCase() || String(buyer.phone).replace(/\D/g, '').slice(-10));
+  const props = PropertiesService.getScriptProperties();
+  const last = Number(props.getProperty(key) || 0);
+  let resent = false;
+  if (buyer.email && Date.now() - last > 6 * HOUR && MailApp.getRemainingDailyQuota() >= 2) {
+    props.setProperty(key, String(Date.now()));
+    const start = workshopStart_(s);
+    sendStage_('welcome', buyer, s, start);                     // has the WhatsApp Community link
+    if (s.live) sendStage_('live', buyer, s, start);            // Zoom link, once it is in Settings
+    else MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
+      subject: '🔴 Your Zoom link — ' + WORKSHOP_NAME,
+      htmlBody: emailLayout_('<p>నమస్కారం ' + escape_(buyer.name) + ' గారు 🙏</p><p>You are already registered. ' +
+        'The Zoom link will be emailed to you on <b>' +
+        escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a")) +
+        ' IST</b>, one hour before we start.</p>') });
+    resent = true;
+  }
+  return { registered: true, resent: resent };
 }
 
 function doPost(e) {
