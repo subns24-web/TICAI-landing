@@ -393,10 +393,10 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
 .pop-price strong{font-size:2.1rem;font-weight:900;color:var(--brand);letter-spacing:-1px;line-height:1}
 .pop .btn{width:100%;justify-content:center}
 .pop-no{
-  display:block;width:100%;background:none;border:0;margin-top:12px;cursor:pointer;
-  font-family:inherit;font-size:.82rem;color:var(--t3);text-decoration:underline;
+  display:block;width:100%;margin-top:10px;cursor:pointer;padding:12px 16px;border-radius:12px;
+  background:#fff;border:1.5px solid var(--line-d);font-family:inherit;font-size:.95rem;font-weight:700;color:var(--t2);
 }
-.pop-no:hover{color:var(--t2)}
+.pop-no:hover{border-color:var(--t3);color:var(--t1)}
 
 /* sticky */
 .sticky{
@@ -1159,8 +1159,8 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
     <button class="pop-x" onclick="closePop('x')" aria-label="Close">✕</button>
     <div class="pop-h">
       <b id="pop-title" class="i18n"
-        data-te="<em>ఆగండి!</em> వెళ్ళే ముందు ఒక్క నిమిషం."
-        data-en="<em>HEY, WAIT!</em> One minute before you go."></b>
+        data-te="<em>ఆగండి!</em> ఈ అవకాశాన్ని మిస్ అవ్వాలనుకుంటున్నారా?"
+        data-en="<em>WAIT!</em> Do you want to miss this opportunity?"></b>
     </div>
     <div class="pop-b">
       <p class="lead i18n"
@@ -1180,11 +1180,11 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
       <div class="pop-price"><s>₹1,999</s><strong>₹199</strong></div>
 
       <a href="#reg" class="btn" onclick="closePop('cta')">
-        <span class="i18n" data-te="సరే, నా seat book చేస్తాను →" data-en="OK, book my seat →"></span>
+        <span class="i18n" data-te="Register చేయండి →" data-en="Register →"></span>
         <small class="i18n" data-te="30 సెకన్లలో పూర్తవుతుంది" data-en="Takes 30 seconds"></small>
       </a>
       <button class="pop-no i18n" onclick="closePop('no')"
-        data-te="వద్దు, తర్వాత చూస్తాను" data-en="No thanks, I'll look later"></button>
+        data-te="మూసివేయండి" data-en="Close"></button>
     </div>
   </div>
 </div>
@@ -1285,31 +1285,39 @@ const OFFER_DEADLINE = (function(){
 })();
 
 /* =======================================================
-   URGENCY POPUP — fires on a 2-minute timer, and on
-   desktop exit-intent. Shows at most once per session.
-   Set POPUP_DELAY to 0 to disable the timer trigger.
+   "DON'T MISS THIS" POPUP
+   1) after POPUP_DELAY seconds on the page
+   2) desktop exit-intent: the pointer heads for the tab bar / close button
+   Each trigger shows at most once per visit, never while the visitor is typing in the
+   form, after they register, or on the way to the payment page.
+   3) On the real tab/window close, browsers only allow their OWN "Leave site?" box
+      (their wording and language, Leave / Cancel); custom popups are blocked there.
    ======================================================= */
-const POPUP_DELAY = 120;   // seconds on page before it fires
+const POPUP_DELAY = 60;   // seconds on page before it fires. 0 = off
+const ASK_BEFORE_LEAVING = true;   // browser's own "Leave site?" box on close
+
+let _sntgLeavingOk = false;   // set when heading to payment, so no "Leave site?" box
 
 (function(){
   const ov = document.getElementById('pop');
   if(!ov) return;
-  let shown = false, timer = null;
+  let timer = null;
 
-  const seen = () => { try{ return sessionStorage.getItem('sntg_pop') === '1'; }catch(e){ return false; } };
-  const mark = () => { try{ sessionStorage.setItem('sntg_pop','1'); }catch(e){} };
+  const key = t => 'sntg_pop_' + t;
+  const seen = t => { try{ return sessionStorage.getItem(key(t)) === '1'; }catch(e){ return false; } };
+  const mark = t => { try{ sessionStorage.setItem(key(t), '1'); }catch(e){} };
+  const registered = () => { try{ return sessionStorage.getItem('sntg_registered') === '1'; }catch(e){ return false; } };
 
-  function canShow(){
-    if(shown || seen()) return false;
-    // don't interrupt someone already filling the form or already registered
+  function canShow(t){
+    if(seen(t) || ov.classList.contains('on') || registered() || _sntgLeavingOk) return false;
+    // don't interrupt someone filling the form
     if(document.activeElement && document.activeElement.closest && document.activeElement.closest('form')) return false;
-    try{ if(sessionStorage.getItem('sntg_registered') === '1') return false; }catch(e){}
     return true;
   }
 
-  function open(){
-    if(!canShow()) return;
-    shown = true; mark();
+  function open(t){
+    if(!canShow(t)) return;
+    mark(t);
     ov.classList.add('on');
     document.body.style.overflow = 'hidden';
     const btn = ov.querySelector('.btn');
@@ -1319,17 +1327,23 @@ const POPUP_DELAY = 120;   // seconds on page before it fires
   window.closePop = function(){
     ov.classList.remove('on');
     document.body.style.overflow = '';
-    if(timer){ clearTimeout(timer); timer = null; }
   };
 
   // 1) time on page
-  if(POPUP_DELAY > 0) timer = setTimeout(open, POPUP_DELAY * 1000);
+  if(POPUP_DELAY > 0) timer = setTimeout(() => open('timer'), POPUP_DELAY * 1000);
 
-  // 2) desktop exit-intent — pointer leaves through the top of the window
+  // 2) desktop exit-intent: pointer leaves through the top of the window
   document.addEventListener('mouseout', function(e){
     if(e.relatedTarget || e.toElement) return;
     if(e.clientY > 6) return;
-    open();
+    open('exit');
+  });
+
+  // 3) real close / reload / navigate away: the browser's own confirmation box
+  window.addEventListener('beforeunload', function(e){
+    if(!ASK_BEFORE_LEAVING || _sntgLeavingOk || registered()) return;
+    e.preventDefault();
+    e.returnValue = '';   // browsers show their own text; custom text is ignored
   });
 
   // dismissals
@@ -1403,6 +1417,7 @@ async function register(e){
 
   // Skip WhatsApp while the number is still the placeholder, so only the payment page opens.
   if(!/X/i.test(WHATSAPP_NUMBER)) window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+  _sntgLeavingOk = true;   // no "Leave site?" box on the way to payment
   if(PAYMENT_LINK) window.location.href = PAYMENT_LINK;
   return false;
 }

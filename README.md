@@ -31,24 +31,24 @@ Open `index.html` locally. Deploy with `vercel` — no build step, no config.
 Also hand-maintained: the **"82% full" seat meter** appears in three places
 (hero, offer box, sticky bar). Static on purpose — no fake auto-decrementing counter.
 
-## Urgency popup
+## "Don't miss this" popup
 
-Fires on **two triggers**, whichever comes first, and shows **at most once per session**:
+Headline: **"ఆగండి! ఈ అవకాశాన్ని మిస్ అవ్వాలనుకుంటున్నారా?" / "WAIT! Do you want to miss this
+opportunity?"**, in the page's current language, with two buttons: **Register** (closes the
+popup and scrolls to the form) and **Close**.
 
-1. **2 minutes on page** — `const POPUP_DELAY = 120;` (seconds). Set to `0` to disable the
-   timer and keep only exit-intent.
-2. **Desktop exit-intent** — pointer leaves through the top of the window. Mobile has no
-   equivalent, which is why the timer matters: most of your traffic will never fire this one.
+Two triggers, **each shown at most once per visit**:
 
-It is deliberately suppressed when it would be obnoxious or counterproductive:
+1. **1 minute on page** — `const POPUP_DELAY = 60;` (seconds). `0` turns it off.
+2. **Desktop exit-intent** — the pointer heads for the tab bar / close button.
 
-- while the visitor is focused in a form field (don't interrupt someone converting)
-- after a registration (`sntg_registered` in sessionStorage)
-- on ordinary in-page mouse movement, or a pointer leaving low on the screen
-- on any second trigger in the same session (`sntg_pop` in sessionStorage)
+On the **actual tab or window close**, browsers do not allow a custom popup. With
+`ASK_BEFORE_LEAVING = true` the browser shows **its own** "Leave site?" box (its wording and
+language, Leave / Cancel). It is skipped on the way to the payment page and after registering.
 
-Dismissable by the ✕, the "no thanks" link, clicking the backdrop, or Escape. Body scroll
-is locked while open and restored on close.
+Suppressed while the visitor is typing in the form, after a registration (`sntg_registered`
+in sessionStorage), and on the way to payment. Dismissable by Register, Close, ✕, the
+backdrop or Escape.
 
 **Note on the decline link:** the reference page uses a guilt-trip decline
 ("No thanks, I GIVE UP ON MY DREAMS…"). This one just says "వద్దు, తర్వాత చూస్తాను".
