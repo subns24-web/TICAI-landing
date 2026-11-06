@@ -1353,18 +1353,25 @@ async function alreadyRegistered(email, phone){
   }catch(err){ return null; }
 }
 
-function showAlreadyRegistered(form, te){
+/* Shown in the page's current language and switched by the తెలుగు / EN buttons like every
+   other .i18n element (setLang copies data-te / data-en into it). */
+const ALREADY_REG = {
+  te: `✅ <b>మీరు ఇప్పటికే ఈ email / phone number తో register అయ్యారు.</b><br>మళ్ళీ payment అవసరం లేదు. Zoom link మరియు WhatsApp community link ఉన్న emails ను మీరు register చేసిన email కి మళ్ళీ పంపాము. Spam / Promotions folder కూడా చూడండి.`,
+  en: `✅ <b>You have already registered with this email / phone number.</b><br>No need to pay again. We've re-sent the emails with your Zoom link and WhatsApp community link to the email you registered with. Please check Spam / Promotions too.`
+};
+
+function showAlreadyRegistered(form){
   let box = form.parentNode.querySelector('.already-reg');
   if(!box){
     box = document.createElement('div');
-    box.className = 'already-reg';
+    box.className = 'already-reg i18n';
+    box.setAttribute('data-te', ALREADY_REG.te);
+    box.setAttribute('data-en', ALREADY_REG.en);
     box.setAttribute('role', 'status');
     box.style.cssText = 'margin:14px 0 4px;padding:14px 16px;border-radius:12px;background:#E9F9EF;border:1px solid #BDEBCD;color:#0B5A31;font-size:.92rem;line-height:1.55';
     form.insertAdjacentElement('afterend', box);
   }
-  box.innerHTML = te
-    ? `✅ <b>మీరు ఇప్పటికే ఈ email / phone number తో register అయ్యారు.</b><br>మళ్ళీ payment అవసరం లేదు. Zoom link మరియు WhatsApp community link ఉన్న emails ను మీరు register చేసిన email కి మళ్ళీ పంపాము. Spam / Promotions folder కూడా చూడండి.`
-    : `✅ <b>You have already registered with this email / phone number.</b><br>No need to pay again. We've re-sent the emails with your Zoom link and WhatsApp community link to the email you registered with. Please check Spam / Promotions too.`;
+  box.innerHTML = document.documentElement.lang === 'en' ? ALREADY_REG.en : ALREADY_REG.te;
   box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -1378,7 +1385,7 @@ async function register(e){
 
   const reg = await alreadyRegistered(g('email'), g('phone'));
   if(btn){ delete btn.dataset.busy; btn.style.opacity = ''; }
-  if(reg){ showAlreadyRegistered(f, te); return false; }
+  if(reg){ showAlreadyRegistered(f); return false; }
 
   try{ sessionStorage.setItem('sntg_registered','1'); }catch(err){}
   if(typeof closePop === 'function') closePop();
