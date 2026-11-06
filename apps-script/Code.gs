@@ -36,11 +36,6 @@ function isRecordedAmount_(paise) {
   return paise === COURSE_AMOUNT_PAISE || isWorkshopAmount_(paise);
 }
 
-/** Academy plan for a payment amount in rupees: ₹4999 → full course, otherwise academy only. */
-function planForAmount_(rupees) {
-  return Number(rupees) === COURSE_AMOUNT_PAISE / 100 ? 'course' : 'academy';
-}
-
 /** ₹199, or ₹1 while testing. */
 function isWorkshopAmount_(paise) {
   if (paise === AMOUNT_PAISE) return true;
@@ -58,14 +53,12 @@ const LEAD_HEADERS    = ['Submitted at', 'Name', 'WhatsApp', 'Email', 'Business'
 const PAYMENT_HEADERS = ['Paid at', 'Payment ID', 'Amount (₹)', 'Name', 'Email', 'WhatsApp / Phone',
                          'Method', 'Status', 'Recorded via', 'Razorpay notes',
                          'Welcome sent', 'Reminder sent', 'Live link sent', 'Thank-you sent',
-                         'Academy account'];
-const COL = { name: 4, email: 5, phone: 6, status: 8, academy: 15 };   // 1-based columns in Payments
+                         'Website access sent'];
+const COL = { name: 4, email: 5, phone: 6, status: 8, access: 15 };   // 1-based columns in Payments
 
-// TIC AI Academy (student login). Accounts are created in its Supabase project when
-// Razorpay confirms a payment. Script properties: SUPABASE_URL, SUPABASE_SERVICE_KEY (secret).
+// Free website access email: sent to every buyer right after the welcome email.
 const ACADEMY_URL = 'https://tic-ai-academy.vercel.app/';
-// The course every academy student starts with; the welcome-to-academy email links straight to it.
-const ACADEMY_COURSE_URL = ACADEMY_URL + 'courses/ai-for-business-foundations';
+const ACADEMY_TEMP_PASSWORD = 'ticai2026';
 
 // Settings tab: label → default value. Edit the values in the sheet, not here.
 const SETTINGS = {
@@ -84,6 +77,7 @@ const HOUR = 3600 * 1000, MIN = 60 * 1000;
 // Each stage: Payments column it stamps, and when it is due relative to the workshop start.
 const STAGES = [
   { key: 'welcome',  col: 11, due: (now, start) => true },
+  { key: 'access',   col: 15, due: (now, start) => true },   // free website access + login
   { key: 'reminder', col: 12, due: (now, start) => now >= start - 16 * HOUR && now < start - 70 * MIN },
   { key: 'live',     col: 13, due: (now, start) => now >= start - 60 * MIN && now < start + WORKSHOP_HOURS * HOUR },
   { key: 'thanks',   col: 14, due: (now, start) => now >= start + (WORKSHOP_HOURS + 0.5) * HOUR && now < start + 72 * HOUR }
@@ -132,8 +126,8 @@ function checkRegistered_(email, phone) {
   if (buyer.email && Date.now() - last > 6 * HOUR && MailApp.getRemainingDailyQuota() >= 2) {
     props.setProperty(key, String(Date.now()));
     const start = workshopStart_(s);
-    sendStage_('welcome', buyer, s, start,                      // has the WhatsApp Community link
-      academyConfigured_() ? { academy: { status: 'exists' } } : undefined);
+    sendStage_('welcome', buyer, s, start);                     // has the WhatsApp Community link
+    sendStage_('access', buyer, s, start);                      // website link + login
     if (s.live) sendStage_('live', buyer, s, start);            // Zoom link, once it is in Settings
     else MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
       subject: '🔴 Your Zoom link — ' + WORKSHOP_NAME,
@@ -248,6 +242,12 @@ function oneTimeUpdates_() {
 
   // Show every time in the sheet in India time (it was created on GMT).
   if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
+
+  if (!props.getProperty('DONE_ACCESS_HEADER_V1')) {
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    sh.getRange(1, COL.access).setValue(PAYMENT_HEADERS[COL.access - 1]);
+    props.setProperty('DONE_ACCESS_HEADER_V1', new Date().toISOString());
+  }
 
   if (!props.getProperty('DONE_DATE_2026_11_22')) {
     const sh = ensureSettings_();
@@ -416,15 +416,6 @@ function runMessages() {
     const DUP = 'not sent — same person already received this';
     const REFUNDED = 'not sent — payment no longer successful in Razorpay';
     const sentTo = {};   // stage key -> { buyerKey: true }
-    const academyOn = academyConfigured_();
-    const academyDone = {};   // email -> plan already granted ('academy' | 'course')
-    rows.forEach(r => {
-      const e = String(r[COL.email - 1] || '').trim().toLowerCase();
-      const cell = String(r[COL.academy - 1] || '');
-      if (!e || cell === '' || /✗/.test(cell)) return;
-      const plan = /course/.test(cell) ? 'course' : 'academy';   // older stamps without a plan = academy
-      academyDone[e] = academyDone[e] === 'course' || plan === 'course' ? 'course' : 'academy';
-    });
     STAGES.forEach(st => sentTo[st.key] = {});
     rows.forEach(r => {
       if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
@@ -447,8 +438,7 @@ function runMessages() {
       const allNow = testingNow && /^pay_/.test(pid) && paidAt > now - 6 * HOUR &&
                      !props.getProperty('PREVIEW_' + pid);
       const due = STAGES.filter(st => r[st.col - 1] === '' && (allNow || st.due(now, start.getTime())));
-      const needAcademy = academyOn && r[COL.academy - 1] === '' && /@/.test(String(r[COL.email - 1] || ''));
-      if (!due.length && !needAcademy) { if (allNow) props.setProperty('PREVIEW_' + pid, String(now)); continue; }
+      if (!due.length) { if (allNow) props.setProperty('PREVIEW_' + pid, String(now)); continue; }
 
       // Re-confirm with Razorpay before messaging: a refunded payment gets nothing more.
       if (hasKeys_() && /^pay_/.test(pid)) {
@@ -472,27 +462,6 @@ function runMessages() {
         }
       }
 
-      // Academy account: one per email. Created now; its login details go out in their own
-      // "Congratulations! Welcome to TIC AI Academy" email.
-      let acct = null;
-      if (needAcademy) {
-        const ae = buyer.email.trim().toLowerCase();
-        const plan = planForAmount_(r[2]);
-        const upgrade = academyDone[ae] === 'academy' && plan === 'course';
-        if (academyDone[ae] && !upgrade) {
-          sh.getRange(i + 2, COL.academy).setValue('same person — login already sent');
-        } else {
-          acct = ensureAcademyAccount_(buyer, plan);
-          if (acct.status === 'error') {
-            sh.getRange(i + 2, COL.academy).setValue(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm') +
-              ' · ✗ ' + acct.error + ' (clear this cell to retry)');
-            acct = null;
-          } else {
-            academyDone[ae] = plan;
-          }
-        }
-      }
-
       for (const st of due) {
         if (st.key === 'live' && !s.live && !allNow) { alertMissingLiveLink_(); continue; }
         const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
@@ -510,16 +479,6 @@ function runMessages() {
         if (k) sentTo[st.key][k] = true;
       }
       if (allNow) props.setProperty('PREVIEW_' + pid, String(now));   // test emails sent once
-
-      if (acct) {
-        const stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm') + ' · ' +
-          ({ created: 'account created', upgraded: 'upgraded to course', exists: 'account already existed' }[acct.status]) +
-          ' · plan: ' + acct.plan;
-        if (MailApp.getRemainingDailyQuota() >= 1) {
-          const ok = sendAcademyEmail_(buyer, acct, s);
-          sh.getRange(i + 2, COL.academy).setValue(stamp + (ok ? ' · academy welcome email ✓' : ' · academy email ✗ (clear to retry)'));
-        }
-      }
     }
   } finally {
     lock.releaseLock();
@@ -544,7 +503,9 @@ function sendStage_(key, buyer, s, start) {
     parts.push('no email');
   }
 
-  if (waConfigured_()) {
+  if (!m.waTemplate) {
+    // email only (no approved WhatsApp template for this message)
+  } else if (waConfigured_()) {
     const to = normalizePhone_(buyer.phone);
     if (!to) parts.push('no WhatsApp number');
     else {
@@ -586,6 +547,21 @@ function message_(key, b, s, start) {
             button(s.community, 'Join the WhatsApp Community', '#25D366') +
             '<p>We will send the live link 1 hour before the workshop.</p>',
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
+    };
+    case 'access': return {
+      subject: '🎁 Congratulations' + (fullName ? ' ' + fullName : '') + '! You have free access to our website',
+      html: hi + '<p><b>Congratulations!</b> 🎉 మీకు మా website కి <b>free access</b> లభించింది.<br>' +
+            'As a workshop participant, you get <b>free access to our website</b> — TIC AI Academy.</p>' +
+            button(ACADEMY_URL, 'Open the website →', '#004AAD') +
+            '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
+              '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
+              '<p style="margin:0">Website: <a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a><br>' +
+              'Login ID: <b>' + escape_(b.email) + '</b> (మీరు register చేసిన email / your registered email)<br>' +
+              'Temporary password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code></p>' +
+            '</div>' +
+            '<p>మీరు register చేసిన email మరియు పై temporary password తో login అవ్వండి. Login అయిన తర్వాత మీ సొంత password పెట్టుకోవచ్చు.<br>' +
+            'Log in with your registered email and the temporary password above. You can set your own password after logging in.</p>',
+      waTemplate: null, waParams: []
     };
     case 'reminder': return {
       subject: '⏰ ' + who + 'your workshop is tomorrow — ' + WORKSHOP_NAME,
@@ -707,153 +683,13 @@ function sendTestToLatestLead() {
   return out;
 }
 
-/* ================= TIC AI Academy accounts (Supabase Auth) ================= */
-
-function academyConfigured_() {
-  const p = PropertiesService.getScriptProperties();
-  return !!(p.getProperty('SUPABASE_URL') && p.getProperty('SUPABASE_SERVICE_KEY'));
-}
-
-/** Starting password, easy to type from an email: e.g. "TIC-4827-Kmqp". */
-function academyPassword_() {
-  const hex = Utilities.getUuid().replace(/-/g, '');
-  const letters = 'abcdefghjkmnpqrstuvwxyz';
-  const digits = String(parseInt(hex.slice(0, 8), 16) % 10000).padStart(4, '0');
-  let word = '';
-  for (let i = 0; i < 4; i++) word += letters[parseInt(hex.slice(8 + i * 2, 10 + i * 2), 16) % letters.length];
-  return 'TIC-' + digits + '-' + word.charAt(0).toUpperCase() + word.slice(1);
-}
-
-/**
- * Creates the student's academy login (email already confirmed) with their plan in
- * app_metadata.plan ('academy' for ₹199, 'course' for ₹4999 — students cannot change it).
- * An existing account keeps its password; it is only upgraded from academy to course.
- * Returns { status: 'created', password, plan } | { status: 'exists' | 'upgraded', plan } |
- *         { status: 'error', error }.
- */
-function ensureAcademyAccount_(buyer, plan) {
-  plan = plan === 'course' ? 'course' : 'academy';
-  const p = PropertiesService.getScriptProperties();
-  const base = String(p.getProperty('SUPABASE_URL') || '').replace(/\/+$/, '');
-  const key = p.getProperty('SUPABASE_SERVICE_KEY');
-  const email = String(buyer.email || '').trim().toLowerCase();
-  if (!base || !key || !email) return { status: 'error', error: 'academy not configured' };
-  const headers = { apikey: key, Authorization: 'Bearer ' + key };
-  const err = (code, body) => {
-    let msg = body;
-    try { const j = JSON.parse(body); msg = j.msg || j.message || j.error_description || j.error || body; } catch (e) {}
-    return { status: 'error', error: 'Supabase ' + code + ': ' + String(msg).slice(0, 100) };
-  };
-  const password = academyPassword_();
-  try {
-    const res = UrlFetchApp.fetch(base + '/auth/v1/admin/users', {
-      method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: headers,
-      payload: JSON.stringify({ email: email, password: password, email_confirm: true,
-                                app_metadata: { plan: plan },
-                                user_metadata: { name: buyer.name || '', phone: buyer.phone || '' } })
-    });
-    const code = res.getResponseCode(), body = res.getContentText();
-    if (code === 200 || code === 201) return { status: 'created', password: password, plan: plan };
-    if (!(code === 422 || /already been registered|email_exists|already exists/i.test(body))) return err(code, body);
-
-    // Account exists: find it, and upgrade academy → course if this payment is the course.
-    const user = findAcademyUser_(base, headers, email);
-    if (!user) return { status: 'exists', plan: plan };
-    const current = (user.app_metadata && user.app_metadata.plan) === 'course' ? 'course' : 'academy';
-    if (plan === 'course' && current !== 'course') {
-      const up = UrlFetchApp.fetch(base + '/auth/v1/admin/users/' + user.id, {
-        method: 'put', contentType: 'application/json', muteHttpExceptions: true, headers: headers,
-        payload: JSON.stringify({ app_metadata: { plan: 'course' } })
-      });
-      if (up.getResponseCode() !== 200) return err(up.getResponseCode(), up.getContentText());
-      return { status: 'upgraded', plan: 'course' };
-    }
-    return { status: 'exists', plan: current };
-  } catch (e) {
-    return { status: 'error', error: String(e.message).slice(0, 120) };
-  }
-}
-
-/** Looks an academy user up by email (admin list, up to 10,000 users). */
-function findAcademyUser_(base, headers, email) {
-  for (let page = 1; page <= 50; page++) {
-    const res = UrlFetchApp.fetch(base + '/auth/v1/admin/users?page=' + page + '&per_page=200',
-      { headers: headers, muteHttpExceptions: true });
-    if (res.getResponseCode() !== 200) return null;
-    const users = (JSON.parse(res.getContentText()).users) || [];
-    const hit = users.find(u => String(u.email || '').toLowerCase() === email);
-    if (hit) return hit;
-    if (users.length < 200) return null;
-  }
-  return null;
-}
-
-/** The login box (Telugu + English) in the "Welcome to TIC AI Academy" email. */
-function academyBlock_(email, acct) {
-  const td = 'padding:5px 14px 5px 0;color:#47576B;vertical-align:top;white-space:nowrap';
-  const pw = acct.status === 'created'
-    ? '<code style="font-size:17px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:3px 8px">' + escape_(acct.password) + '</code>' +
-      '<br><span style="color:#47576B;font-size:13px">మొదటి login కోసం / for your first login</span>'
-    : 'మీ ప్రస్తుత password / your existing password';
-  const link = (href, text) => '<a href="' + href + '" style="color:#0e1527;font-weight:700">' + text + '</a>';
-  return '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:16px 18px;margin:22px 0">' +
-    '<p style="margin:0 0 10px"><b>🔐 మీ login వివరాలు / Your login details</b></p>' +
-    '<table style="font-size:15px;border-collapse:collapse">' +
-      '<tr><td style="' + td + '">Course</td><td><a href="' + ACADEMY_COURSE_URL + '">' + ACADEMY_COURSE_URL.replace(/^https:\/\//, '') + '</a></td></tr>' +
-      '<tr><td style="' + td + '">Login ID</td><td><b>' + escape_(email) + '</b><br><span style="color:#47576B;font-size:13px">(మీరు register చేసిన email / your registered email)</span></td></tr>' +
-      '<tr><td style="' + td + '">Password</td><td>' + pw + '</td></tr>' +
-      '<tr><td style="' + td + '">Access</td><td>' +
-        (acct.plan === 'course'
-          ? '<b>Academy + పూర్తి course / Academy + full course</b> (₹4999)'
-          : '<b>TIC AI Academy</b> (₹199)') + '</td></tr>' +
-    '</table>' +
-    '<p style="margin:16px 0 0"><a href="' + ACADEMY_COURSE_URL + '" style="background:#0e1527;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">Course ప్రారంభించండి / Start the course →</a></p>' +
-    '<p style="margin:18px 0 0;font-size:14px;line-height:1.6">' +
-      '🔑 <b>Password మార్చుకోవాలా? / Change password:</b> login అయిన తర్వాత ' + link(ACADEMY_URL + 'account', '"నా account / My account"') + ' page లో కొత్త password పెట్టుకోండి (ఇష్టమైతేనే).<br>' +
-      '<span style="color:#47576B">After logging in, open ' + link(ACADEMY_URL + 'account', 'My account') + ' to set your own password (optional).</span></p>' +
-    '<p style="margin:12px 0 0;font-size:14px;line-height:1.6">' +
-      '❓ <b>Password మర్చిపోయారా? / Forgot password:</b> ' + link(ACADEMY_URL + 'login', 'login page') + ' లో మీ email టైప్ చేసి <b>"Password మర్చిపోయారా?"</b> నొక్కండి — reset link email కి వస్తుంది.<br>' +
-      '<span style="color:#47576B">On the ' + link(ACADEMY_URL + 'login', 'login page') + ', type your email and tap <b>"Forgot password?"</b> — we email you a reset link.</span></p>' +
-    '</div>';
-}
-
-/** "Congratulations! Welcome to TIC AI Academy" — sent to every confirmed buyer with their login. */
-function sendAcademyEmail_(buyer, acct, s) {
-  const name = String(buyer.name || '').trim();
-  const upgraded = acct.status === 'upgraded';
-  try {
-    const opts = {
-      to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
-      subject: '🎉 Congratulations' + (name ? ' ' + name : '') + '! ' +
-        (upgraded ? 'Your TIC AI full course is unlocked' : 'Welcome to TIC AI Academy'),
-      htmlBody: emailLayout_(
-        (name ? '<p>నమస్కారం <b>' + escape_(name) + '</b> గారు 🙏<br>Dear <b>' + escape_(name) + '</b>,</p>' : '<p>నమస్కారం 🙏</p>') +
-        '<h2 style="margin:6px 0 10px;font-size:22px;color:#0e1527">🎉 Congratulations! ' +
-          (upgraded ? 'Your full course is unlocked' : 'Welcome to TIC AI Academy') + '</h2>' +
-        (upgraded
-          ? '<p>అభినందనలు! మీ ₹4999 payment తో <b>పూర్తి course</b> access unlock అయింది. మీ పాత login తోనే అన్ని courses చూడవచ్చు.<br>' +
-            'Your ₹4999 payment has unlocked the <b>full course</b>. Use your existing login to watch every course.</p>'
-          : '<p>అభినందనలు! <b>TIC AI Academy</b> కి స్వాగతం. మీ registration విజయవంతమైంది — క్రింది link తో మీ course ఇప్పుడే ప్రారంభించండి.<br>' +
-            'Congratulations, and welcome to <b>TIC AI Academy</b>! Your registration was successful — start your course with the link below.</p>') +
-        academyBlock_(buyer.email, acct) +
-        '<p style="font-size:13px;color:#47576B">ఈ email ని save చేసుకోండి. సహాయం కావాలంటే ఈ email కి reply చేయండి.<br>Keep this email safe. Need help? Just reply to it.</p>')
-    };
-    if (String(s.testing).trim().toUpperCase() === 'ON' && String(buyer.email).toLowerCase() !== OWNER_EMAIL) opts.bcc = OWNER_EMAIL;
-    MailApp.sendEmail(opts);
-    return true;
-  } catch (err) {
-    console.error(err);
-    return false;
-  }
-}
-
 /* ================= "Paid ₹199" / "Paid ₹4999" tabs ================= */
 
 const PAID_TABS = [
   { name: 'Paid ₹199', rupees: 199 },
   { name: 'Paid ₹4999', rupees: 4999 }
 ];
-const PAID_TAB_HEADERS = ['Email', 'Name', 'WhatsApp / Phone', 'Last paid at', 'Payments', 'Latest payment ID', 'Academy account'];
+const PAID_TAB_HEADERS = ['Email', 'Name', 'WhatsApp / Phone', 'Last paid at', 'Payments', 'Latest payment ID', 'Website access sent'];
 
 /** Rebuilds one tab per price from the Payments tab: one row per email, successful payments only. */
 function syncPaidTabs_() {
@@ -870,11 +706,11 @@ function syncPaidTabs_() {
       if (!key) return;
       const t = isDate_(r[0]) ? r[0].getTime() : 0;
       const cur = byEmail[key];
-      if (!cur) byEmail[key] = { email: email, name: r[COL.name - 1], phone: r[COL.phone - 1], t: t, at: r[0], n: 1, pid: r[1], academy: r[COL.academy - 1] };
+      if (!cur) byEmail[key] = { email: email, name: r[COL.name - 1], phone: r[COL.phone - 1], t: t, at: r[0], n: 1, pid: r[1], academy: r[COL.access - 1] };
       else {
         cur.n++;
         if (t >= cur.t) Object.assign(cur, { name: r[COL.name - 1] || cur.name, phone: r[COL.phone - 1] || cur.phone, t: t, at: r[0], pid: r[1] });
-        if (!cur.academy || /^same person/.test(cur.academy)) cur.academy = r[COL.academy - 1] || cur.academy;
+        if (!cur.academy || /same person/.test(cur.academy)) cur.academy = r[COL.access - 1] || cur.academy;
       }
     });
     const list = Object.keys(byEmail).map(k => byEmail[k]).sort((a, b) => b.t - a.t);
