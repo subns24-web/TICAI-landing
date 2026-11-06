@@ -161,6 +161,25 @@ Apps Script → ⚙ **Project Settings → Script properties**:
 Then run **`sendTestToMe`**. You should get 4 emails and 4 WhatsApp messages. If a stamp says
 `WA ✗ …`, the text after it is Meta's reason (usually "template not approved yet" or a token problem).
 
+## Step 8 — TIC AI Academy login for buyers
+
+Every buyer Razorpay confirms gets a **TIC AI Academy** account (https://tic-ai-academy.vercel.app)
+with their registered email and a starting password like `TIC-4827-Kmqp`. The login details go
+**inside the welcome email**; buyers who already had their welcome email get a separate
+"🎓 your TIC AI Academy login" email once. One account per email; an existing account is never
+changed. The **Academy account** column in Payments shows what happened (clear a cell to retry).
+
+1. Create a Supabase project for the academy (supabase.com → New project).
+2. Supabase → **Authentication → Sign In / Providers → Email**: turn **off** "Allow new users to sign up".
+3. Supabase → **Authentication → URL Configuration**: Site URL `https://tic-ai-academy.vercel.app`,
+   Redirect URLs: add `https://tic-ai-academy.vercel.app/account`.
+4. Supabase → **Project Settings → API**: copy the Project URL, the `anon` public key and the
+   `service_role` secret key.
+5. Apps Script → ⚙ Project Settings → Script properties: `SUPABASE_URL` = Project URL,
+   `SUPABASE_SERVICE_KEY` = the **service_role** key. (Secret: only here, never in a website or chat.)
+6. Vercel → the academy project → Settings → Environment Variables: `NEXT_PUBLIC_SUPABASE_URL` =
+   Project URL, `NEXT_PUBLIC_SUPABASE_ANON_KEY` = the **anon** key. Redeploy.
+
 ## Settings in `Code.gs`
 
 | Setting | Default | Meaning |

@@ -46,8 +46,13 @@ const SETTINGS_SHEET = 'Settings';
 const LEAD_HEADERS    = ['Submitted at', 'Name', 'WhatsApp', 'Email', 'Business', 'Language', 'Page'];
 const PAYMENT_HEADERS = ['Paid at', 'Payment ID', 'Amount (₹)', 'Name', 'Email', 'WhatsApp / Phone',
                          'Method', 'Status', 'Recorded via', 'Razorpay notes',
-                         'Welcome sent', 'Reminder sent', 'Live link sent', 'Thank-you sent'];
-const COL = { name: 4, email: 5, phone: 6, status: 8 };   // 1-based columns in Payments
+                         'Welcome sent', 'Reminder sent', 'Live link sent', 'Thank-you sent',
+                         'Academy account'];
+const COL = { name: 4, email: 5, phone: 6, status: 8, academy: 15 };   // 1-based columns in Payments
+
+// TIC AI Academy (student login). Accounts are created in its Supabase project when
+// Razorpay confirms a payment. Script properties: SUPABASE_URL, SUPABASE_SERVICE_KEY (secret).
+const ACADEMY_URL = 'https://tic-ai-academy.vercel.app/';
 
 // Settings tab: label → default value. Edit the values in the sheet, not here.
 const SETTINGS = {
@@ -114,7 +119,8 @@ function checkRegistered_(email, phone) {
   if (buyer.email && Date.now() - last > 6 * HOUR && MailApp.getRemainingDailyQuota() >= 2) {
     props.setProperty(key, String(Date.now()));
     const start = workshopStart_(s);
-    sendStage_('welcome', buyer, s, start);                     // has the WhatsApp Community link
+    sendStage_('welcome', buyer, s, start,                      // has the WhatsApp Community link
+      academyConfigured_() ? { academy: { status: 'exists' } } : undefined);
     if (s.live) sendStage_('live', buyer, s, start);            // Zoom link, once it is in Settings
     else MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
       subject: '🔴 Your Zoom link — ' + WORKSHOP_NAME,
@@ -396,6 +402,12 @@ function runMessages() {
     const DUP = 'not sent — same person already received this';
     const REFUNDED = 'not sent — payment no longer successful in Razorpay';
     const sentTo = {};   // stage key -> { buyerKey: true }
+    const academyOn = academyConfigured_();
+    const academyDone = {};   // email -> true once an account email went out
+    rows.forEach(r => {
+      const e = String(r[COL.email - 1] || '').trim().toLowerCase();
+      if (e && String(r[COL.academy - 1] || '') !== '') academyDone[e] = true;
+    });
     STAGES.forEach(st => sentTo[st.key] = {});
     rows.forEach(r => {
       if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
@@ -418,7 +430,8 @@ function runMessages() {
       const allNow = testingNow && /^pay_/.test(pid) && paidAt > now - 6 * HOUR &&
                      !props.getProperty('PREVIEW_' + pid);
       const due = STAGES.filter(st => r[st.col - 1] === '' && (allNow || st.due(now, start.getTime())));
-      if (!due.length) { if (allNow) props.setProperty('PREVIEW_' + pid, String(now)); continue; }
+      const needAcademy = academyOn && r[COL.academy - 1] === '' && /@/.test(String(r[COL.email - 1] || ''));
+      if (!due.length && !needAcademy) { if (allNow) props.setProperty('PREVIEW_' + pid, String(now)); continue; }
 
       // Re-confirm with Razorpay before messaging: a refunded payment gets nothing more.
       if (hasKeys_() && /^pay_/.test(pid)) {
@@ -442,6 +455,25 @@ function runMessages() {
         }
       }
 
+      // Academy account: one per email. Created now, and its login details ride along in the
+      // welcome email when that goes out in this run, otherwise in a separate email.
+      let acct = null, welcomeCarried = false;
+      if (needAcademy) {
+        const ae = buyer.email.trim().toLowerCase();
+        if (academyDone[ae]) {
+          sh.getRange(i + 2, COL.academy).setValue('same person — login already sent');
+        } else {
+          acct = ensureAcademyAccount_(buyer);
+          if (acct.status === 'error') {
+            sh.getRange(i + 2, COL.academy).setValue(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm') +
+              ' · ✗ ' + acct.error + ' (clear this cell to retry)');
+            acct = null;
+          } else {
+            academyDone[ae] = true;
+          }
+        }
+      }
+
       for (const st of due) {
         if (st.key === 'live' && !s.live && !allNow) { alertMissingLiveLink_(); continue; }
         const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
@@ -452,13 +484,26 @@ function runMessages() {
         // goes at its scheduled time (21 Nov 6 PM reminder, 22 Nov 9 AM live link, 12:30 PM thank-you).
         const preview = allNow && st.key !== 'welcome' && !st.due(now, start.getTime());
         const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
-        const result = sendStage_(st.key, buyer, sSend, start);
+        const withAcademy = st.key === 'welcome' && acct ? { academy: acct } : undefined;
+        const result = sendStage_(st.key, buyer, sSend, start, withAcademy);
+        if (withAcademy && /Email ✓/.test(result)) welcomeCarried = true;
         if (preview) continue;
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
         if (k) sentTo[st.key][k] = true;
       }
       if (allNow) props.setProperty('PREVIEW_' + pid, String(now));   // test emails sent once
+
+      if (acct) {
+        const stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm') + ' · ' +
+          (acct.status === 'created' ? 'account created' : 'account already existed');
+        if (welcomeCarried) {
+          sh.getRange(i + 2, COL.academy).setValue(stamp + ' · login in welcome email');
+        } else if (MailApp.getRemainingDailyQuota() >= 1) {
+          const ok = sendAcademyEmail_(buyer, acct, s);
+          sh.getRange(i + 2, COL.academy).setValue(stamp + (ok ? ' · login email ✓' : ' · login email ✗ (clear to retry)'));
+        }
+      }
     }
   } finally {
     lock.releaseLock();
@@ -466,8 +511,8 @@ function runMessages() {
 }
 
 /** Sends one message (email + WhatsApp) and returns the text stamped in the sheet. */
-function sendStage_(key, buyer, s, start) {
-  const m = message_(key, buyer, s, start);
+function sendStage_(key, buyer, s, start, extra) {
+  const m = message_(key, buyer, s, start, extra);
   const parts = [];
 
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(buyer.email)) {
@@ -497,7 +542,7 @@ function sendStage_(key, buyer, s, start) {
 }
 
 /** The four messages. Email HTML + the WhatsApp template name and its {{1}}, {{2}}… values. */
-function message_(key, b, s, start) {
+function message_(key, b, s, start, extra) {
   const fullName = String(b.name || '').trim();
   const first = fullName.split(/\s+/)[0] || 'there';
   const hi = fullName
@@ -523,7 +568,8 @@ function message_(key, b, s, start) {
             '<p>📅 <b>' + escape_(when) + '</b><br>📱 Your phone is enough — no laptop needed.</p>' +
             '<p>Join our WhatsApp community for live updates:</p>' +
             button(s.community, 'Join the WhatsApp Community', '#25D366') +
-            '<p>We will send the live link 1 hour before the workshop.</p>',
+            '<p>We will send the live link 1 hour before the workshop.</p>' +
+            (extra && extra.academy ? academyBlock_(b.email, extra.academy) : ''),
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
     };
     case 'reminder': return {
@@ -644,6 +690,92 @@ function sendTestToLatestLead() {
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
   console.log('Sent to ' + lead.name + ' <' + lead.email + '>\n' + out.join('\n'));
   return out;
+}
+
+/* ================= TIC AI Academy accounts (Supabase Auth) ================= */
+
+function academyConfigured_() {
+  const p = PropertiesService.getScriptProperties();
+  return !!(p.getProperty('SUPABASE_URL') && p.getProperty('SUPABASE_SERVICE_KEY'));
+}
+
+/** Starting password, easy to type from an email: e.g. "TIC-4827-Kmqp". */
+function academyPassword_() {
+  const hex = Utilities.getUuid().replace(/-/g, '');
+  const letters = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = String(parseInt(hex.slice(0, 8), 16) % 10000).padStart(4, '0');
+  let word = '';
+  for (let i = 0; i < 4; i++) word += letters[parseInt(hex.slice(8 + i * 2, 10 + i * 2), 16) % letters.length];
+  return 'TIC-' + digits + '-' + word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/**
+ * Creates the student's academy login (email already confirmed). If the email already has an
+ * account, it is left untouched — their existing password keeps working.
+ * Returns { status: 'created', password } | { status: 'exists' } | { status: 'error', error }.
+ */
+function ensureAcademyAccount_(buyer) {
+  const p = PropertiesService.getScriptProperties();
+  const base = String(p.getProperty('SUPABASE_URL') || '').replace(/\/+$/, '');
+  const key = p.getProperty('SUPABASE_SERVICE_KEY');
+  const email = String(buyer.email || '').trim().toLowerCase();
+  if (!base || !key || !email) return { status: 'error', error: 'academy not configured' };
+  const password = academyPassword_();
+  try {
+    const res = UrlFetchApp.fetch(base + '/auth/v1/admin/users', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { apikey: key, Authorization: 'Bearer ' + key },
+      payload: JSON.stringify({ email: email, password: password, email_confirm: true,
+                                user_metadata: { name: buyer.name || '', phone: buyer.phone || '' } })
+    });
+    const code = res.getResponseCode(), body = res.getContentText();
+    if (code === 200 || code === 201) return { status: 'created', password: password };
+    if (code === 422 || /already been registered|email_exists|already exists/i.test(body)) return { status: 'exists' };
+    let msg = body;
+    try { const j = JSON.parse(body); msg = j.msg || j.message || j.error_description || j.error || body; } catch (e) {}
+    return { status: 'error', error: 'Supabase ' + code + ': ' + String(msg).slice(0, 100) };
+  } catch (err) {
+    return { status: 'error', error: String(err.message).slice(0, 120) };
+  }
+}
+
+/** The login box (Telugu + English) used in the welcome email and the separate login email. */
+function academyBlock_(email, acct) {
+  const pw = acct.status === 'created'
+    ? '<code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:3px 8px">' + escape_(acct.password) + '</code>'
+    : 'మీ ప్రస్తుత password / your existing password<br><span style="color:#47576B;font-size:13px">(మర్చిపోతే login page లో "Password మర్చిపోయారా?" నొక్కండి / forgot it? tap "Forgot password?" on the login page)</span>';
+  return '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:16px 18px;margin:22px 0">' +
+    '<p style="margin:0 0 10px"><b>🎓 TIC AI Academy — మీ login వివరాలు / Your login details</b></p>' +
+    '<table style="font-size:15px;border-collapse:collapse">' +
+      '<tr><td style="padding:4px 14px 4px 0;color:#47576B">Website</td><td><a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a></td></tr>' +
+      '<tr><td style="padding:4px 14px 4px 0;color:#47576B">Login email</td><td><b>' + escape_(email) + '</b></td></tr>' +
+      '<tr><td style="padding:4px 14px 4px 0;color:#47576B;vertical-align:top">Password</td><td>' + pw + '</td></tr>' +
+    '</table>' +
+    '<p style="margin:12px 0 0;font-size:13px;color:#47576B">Login అయిన తర్వాత <b>"నా account"</b> లో password మార్చుకోవచ్చు — లేదా ఇదే password తో కొనసాగవచ్చు.<br>' +
+    'After logging in you can change it under <b>"My account"</b> — or keep using this one.</p>' +
+    '<p style="margin:16px 0 0"><a href="' + ACADEMY_URL + 'login" style="background:#0e1527;color:#fff;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:10px;display:inline-block">TIC AI Academy లో login అవ్వండి / Log in →</a></p>' +
+    '</div>';
+}
+
+/** Separate login email, for buyers whose welcome email went out before the academy existed. */
+function sendAcademyEmail_(buyer, acct, s) {
+  const name = String(buyer.name || '').trim();
+  try {
+    const opts = {
+      to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
+      subject: '🎓 ' + (name ? name + ', ' : '') + 'your TIC AI Academy login',
+      htmlBody: emailLayout_((name ? '<p>నమస్కారం <b>' + escape_(name) + '</b> గారు 🙏<br>Dear <b>' + escape_(name) + '</b>,</p>' : '<p>నమస్కారం 🙏</p>') +
+        '<p>మీ workshop registration తో పాటు <b>TIC AI Academy</b> access కూడా మీకు ఉంది — courses, recordings, templates అన్నీ ఒకే చోట.<br>' +
+        'Your workshop registration also gives you access to the <b>TIC AI Academy</b> — courses, recordings and templates in one place.</p>' +
+        academyBlock_(buyer.email, acct))
+    };
+    if (String(s.testing).trim().toUpperCase() === 'ON' && String(buyer.email).toLowerCase() !== OWNER_EMAIL) opts.bcc = OWNER_EMAIL;
+    MailApp.sendEmail(opts);
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
 }
 
 /* ================= WhatsApp (Meta Cloud API) ================= */
