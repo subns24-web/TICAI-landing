@@ -64,6 +64,8 @@ const COL = { name: 4, email: 5, phone: 6, status: 8, academy: 15 };   // 1-base
 // TIC AI Academy (student login). Accounts are created in its Supabase project when
 // Razorpay confirms a payment. Script properties: SUPABASE_URL, SUPABASE_SERVICE_KEY (secret).
 const ACADEMY_URL = 'https://tic-ai-academy.vercel.app/';
+// The course every academy student starts with; the welcome-to-academy email links straight to it.
+const ACADEMY_COURSE_URL = ACADEMY_URL + 'courses/ai-for-business-foundations';
 
 // Settings tab: label → default value. Edit the values in the sheet, not here.
 const SETTINGS = {
@@ -470,9 +472,9 @@ function runMessages() {
         }
       }
 
-      // Academy account: one per email. Created now, and its login details ride along in the
-      // welcome email when that goes out in this run, otherwise in a separate email.
-      let acct = null, welcomeCarried = false;
+      // Academy account: one per email. Created now; its login details go out in their own
+      // "Congratulations! Welcome to TIC AI Academy" email.
+      let acct = null;
       if (needAcademy) {
         const ae = buyer.email.trim().toLowerCase();
         const plan = planForAmount_(r[2]);
@@ -501,9 +503,7 @@ function runMessages() {
         // goes at its scheduled time (21 Nov 6 PM reminder, 22 Nov 9 AM live link, 12:30 PM thank-you).
         const preview = allNow && st.key !== 'welcome' && !st.due(now, start.getTime());
         const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
-        const withAcademy = st.key === 'welcome' && acct ? { academy: acct } : undefined;
-        const result = sendStage_(st.key, buyer, sSend, start, withAcademy);
-        if (withAcademy && /Email ✓/.test(result)) welcomeCarried = true;
+        const result = sendStage_(st.key, buyer, sSend, start);
         if (preview) continue;
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
@@ -515,11 +515,9 @@ function runMessages() {
         const stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm') + ' · ' +
           ({ created: 'account created', upgraded: 'upgraded to course', exists: 'account already existed' }[acct.status]) +
           ' · plan: ' + acct.plan;
-        if (welcomeCarried) {
-          sh.getRange(i + 2, COL.academy).setValue(stamp + ' · login in welcome email');
-        } else if (MailApp.getRemainingDailyQuota() >= 1) {
+        if (MailApp.getRemainingDailyQuota() >= 1) {
           const ok = sendAcademyEmail_(buyer, acct, s);
-          sh.getRange(i + 2, COL.academy).setValue(stamp + (ok ? ' · login email ✓' : ' · login email ✗ (clear to retry)'));
+          sh.getRange(i + 2, COL.academy).setValue(stamp + (ok ? ' · academy welcome email ✓' : ' · academy email ✗ (clear to retry)'));
         }
       }
     }
@@ -529,8 +527,8 @@ function runMessages() {
 }
 
 /** Sends one message (email + WhatsApp) and returns the text stamped in the sheet. */
-function sendStage_(key, buyer, s, start, extra) {
-  const m = message_(key, buyer, s, start, extra);
+function sendStage_(key, buyer, s, start) {
+  const m = message_(key, buyer, s, start);
   const parts = [];
 
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(buyer.email)) {
@@ -560,7 +558,7 @@ function sendStage_(key, buyer, s, start, extra) {
 }
 
 /** The four messages. Email HTML + the WhatsApp template name and its {{1}}, {{2}}… values. */
-function message_(key, b, s, start, extra) {
+function message_(key, b, s, start) {
   const fullName = String(b.name || '').trim();
   const first = fullName.split(/\s+/)[0] || 'there';
   const hi = fullName
@@ -586,8 +584,7 @@ function message_(key, b, s, start, extra) {
             '<p>📅 <b>' + escape_(when) + '</b><br>📱 Your phone is enough — no laptop needed.</p>' +
             '<p>Join our WhatsApp community for live updates:</p>' +
             button(s.community, 'Join the WhatsApp Community', '#25D366') +
-            '<p>We will send the live link 1 hour before the workshop.</p>' +
-            (extra && extra.academy ? academyBlock_(b.email, extra.academy) : ''),
+            '<p>We will send the live link 1 hour before the workshop.</p>',
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
     };
     case 'reminder': return {
@@ -791,43 +788,55 @@ function findAcademyUser_(base, headers, email) {
   return null;
 }
 
-/** The login box (Telugu + English) used in the welcome email and the separate login email. */
+/** The login box (Telugu + English) in the "Welcome to TIC AI Academy" email. */
 function academyBlock_(email, acct) {
+  const td = 'padding:5px 14px 5px 0;color:#47576B;vertical-align:top;white-space:nowrap';
   const pw = acct.status === 'created'
-    ? '<code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:3px 8px">' + escape_(acct.password) + '</code>'
-    : 'మీ ప్రస్తుత password / your existing password<br><span style="color:#47576B;font-size:13px">(మర్చిపోతే login page లో "Password మర్చిపోయారా?" నొక్కండి / forgot it? tap "Forgot password?" on the login page)</span>';
+    ? '<code style="font-size:17px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:3px 8px">' + escape_(acct.password) + '</code>' +
+      '<br><span style="color:#47576B;font-size:13px">మొదటి login కోసం / for your first login</span>'
+    : 'మీ ప్రస్తుత password / your existing password';
+  const link = (href, text) => '<a href="' + href + '" style="color:#0e1527;font-weight:700">' + text + '</a>';
   return '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:16px 18px;margin:22px 0">' +
-    '<p style="margin:0 0 10px"><b>🎓 TIC AI Academy — మీ login వివరాలు / Your login details</b></p>' +
+    '<p style="margin:0 0 10px"><b>🔐 మీ login వివరాలు / Your login details</b></p>' +
     '<table style="font-size:15px;border-collapse:collapse">' +
-      '<tr><td style="padding:4px 14px 4px 0;color:#47576B">Website</td><td><a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a></td></tr>' +
-      '<tr><td style="padding:4px 14px 4px 0;color:#47576B">Login email</td><td><b>' + escape_(email) + '</b></td></tr>' +
-      '<tr><td style="padding:4px 14px 4px 0;color:#47576B;vertical-align:top">Password</td><td>' + pw + '</td></tr>' +
-      '<tr><td style="padding:4px 14px 4px 0;color:#47576B;vertical-align:top">Access</td><td>' +
+      '<tr><td style="' + td + '">Course</td><td><a href="' + ACADEMY_COURSE_URL + '">' + ACADEMY_COURSE_URL.replace(/^https:\/\//, '') + '</a></td></tr>' +
+      '<tr><td style="' + td + '">Login ID</td><td><b>' + escape_(email) + '</b><br><span style="color:#47576B;font-size:13px">(మీరు register చేసిన email / your registered email)</span></td></tr>' +
+      '<tr><td style="' + td + '">Password</td><td>' + pw + '</td></tr>' +
+      '<tr><td style="' + td + '">Access</td><td>' +
         (acct.plan === 'course'
           ? '<b>Academy + పూర్తి course / Academy + full course</b> (₹4999)'
-          : '<b>TIC AI Academy</b> (₹199 workshop)') + '</td></tr>' +
+          : '<b>TIC AI Academy</b> (₹199)') + '</td></tr>' +
     '</table>' +
-    '<p style="margin:12px 0 0;font-size:13px;color:#47576B">Login అయిన తర్వాత <b>"నా account"</b> లో password మార్చుకోవచ్చు — లేదా ఇదే password తో కొనసాగవచ్చు.<br>' +
-    'After logging in you can change it under <b>"My account"</b> — or keep using this one.</p>' +
-    '<p style="margin:16px 0 0"><a href="' + ACADEMY_URL + 'login" style="background:#0e1527;color:#fff;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:10px;display:inline-block">TIC AI Academy లో login అవ్వండి / Log in →</a></p>' +
+    '<p style="margin:16px 0 0"><a href="' + ACADEMY_COURSE_URL + '" style="background:#0e1527;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">Course ప్రారంభించండి / Start the course →</a></p>' +
+    '<p style="margin:18px 0 0;font-size:14px;line-height:1.6">' +
+      '🔑 <b>Password మార్చుకోవాలా? / Change password:</b> login అయిన తర్వాత ' + link(ACADEMY_URL + 'account', '"నా account / My account"') + ' page లో కొత్త password పెట్టుకోండి (ఇష్టమైతేనే).<br>' +
+      '<span style="color:#47576B">After logging in, open ' + link(ACADEMY_URL + 'account', 'My account') + ' to set your own password (optional).</span></p>' +
+    '<p style="margin:12px 0 0;font-size:14px;line-height:1.6">' +
+      '❓ <b>Password మర్చిపోయారా? / Forgot password:</b> ' + link(ACADEMY_URL + 'login', 'login page') + ' లో మీ email టైప్ చేసి <b>"Password మర్చిపోయారా?"</b> నొక్కండి — reset link email కి వస్తుంది.<br>' +
+      '<span style="color:#47576B">On the ' + link(ACADEMY_URL + 'login', 'login page') + ', type your email and tap <b>"Forgot password?"</b> — we email you a reset link.</span></p>' +
     '</div>';
 }
 
-/** Separate login email, for buyers whose welcome email went out before the academy existed. */
+/** "Congratulations! Welcome to TIC AI Academy" — sent to every confirmed buyer with their login. */
 function sendAcademyEmail_(buyer, acct, s) {
   const name = String(buyer.name || '').trim();
+  const upgraded = acct.status === 'upgraded';
   try {
     const opts = {
       to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
-      subject: '🎓 ' + (name ? name + ', ' : '') + (acct.status === 'upgraded'
-        ? 'your TIC AI course access is unlocked' : 'your TIC AI Academy login'),
-      htmlBody: emailLayout_((name ? '<p>నమస్కారం <b>' + escape_(name) + '</b> గారు 🙏<br>Dear <b>' + escape_(name) + '</b>,</p>' : '<p>నమస్కారం 🙏</p>') +
-        (acct.plan === 'course'
-          ? '<p>మీ ₹4999 payment తో <b>TIC AI Academy</b> మరియు <b>పూర్తి course</b> access మీకు ఉంది.<br>' +
-            'Your ₹4999 payment gives you the <b>TIC AI Academy</b> and the <b>full course</b>.</p>'
-          : '<p>మీ workshop registration తో పాటు <b>TIC AI Academy</b> access కూడా మీకు ఉంది.<br>' +
-            'Your workshop registration also gives you access to the <b>TIC AI Academy</b>.</p>') +
-        academyBlock_(buyer.email, acct))
+      subject: '🎉 Congratulations' + (name ? ' ' + name : '') + '! ' +
+        (upgraded ? 'Your TIC AI full course is unlocked' : 'Welcome to TIC AI Academy'),
+      htmlBody: emailLayout_(
+        (name ? '<p>నమస్కారం <b>' + escape_(name) + '</b> గారు 🙏<br>Dear <b>' + escape_(name) + '</b>,</p>' : '<p>నమస్కారం 🙏</p>') +
+        '<h2 style="margin:6px 0 10px;font-size:22px;color:#0e1527">🎉 Congratulations! ' +
+          (upgraded ? 'Your full course is unlocked' : 'Welcome to TIC AI Academy') + '</h2>' +
+        (upgraded
+          ? '<p>అభినందనలు! మీ ₹4999 payment తో <b>పూర్తి course</b> access unlock అయింది. మీ పాత login తోనే అన్ని courses చూడవచ్చు.<br>' +
+            'Your ₹4999 payment has unlocked the <b>full course</b>. Use your existing login to watch every course.</p>'
+          : '<p>అభినందనలు! <b>TIC AI Academy</b> కి స్వాగతం. మీ registration విజయవంతమైంది — క్రింది link తో మీ course ఇప్పుడే ప్రారంభించండి.<br>' +
+            'Congratulations, and welcome to <b>TIC AI Academy</b>! Your registration was successful — start your course with the link below.</p>') +
+        academyBlock_(buyer.email, acct) +
+        '<p style="font-size:13px;color:#47576B">ఈ email ని save చేసుకోండి. సహాయం కావాలంటే ఈ email కి reply చేయండి.<br>Keep this email safe. Need help? Just reply to it.</p>')
     };
     if (String(s.testing).trim().toUpperCase() === 'ON' && String(buyer.email).toLowerCase() !== OWNER_EMAIL) opts.bcc = OWNER_EMAIL;
     MailApp.sendEmail(opts);
