@@ -163,6 +163,12 @@ Then run **`sendTestToMe`**. You should get 4 emails and 4 WhatsApp messages. If
 
 ## Step 8 — TIC AI Academy login for buyers
 
+**Plans:** ₹199 (workshop) → academy access; ₹4999 → academy **and** the full course
+(lessons). The plan is stored in Supabase `app_metadata.plan` (`academy` / `course`), which only
+this script can set. A ₹199 student who later pays ₹4999 is upgraded and emailed "your course access
+is unlocked". ₹4999 buyers also get the workshop emails. The sheet keeps **Paid ₹199** and
+**Paid ₹4999** tabs (one row per email), rebuilt every 5 minutes from Payments.
+
 Every buyer Razorpay confirms gets a **TIC AI Academy** account (https://tic-ai-academy.vercel.app)
 with their registered email and a starting password like `TIC-4827-Kmqp`. The login details go
 **inside the welcome email**; buyers who already had their welcome email get a separate

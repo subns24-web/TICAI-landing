@@ -29,6 +29,17 @@ const SHEET_ID = '1CpZI9srdFq_H44pJv5SK3QQb0XymaVMFGnKNnRvvlUg';
 const OWNER_EMAIL   = 'subns24@gmail.com';
 const AMOUNT_PAISE  = 19900;   // ₹199 — only payments of exactly this amount are recorded
 const TEST_AMOUNT_PAISE = 100; // ₹1 — also accepted while the Settings "Testing" switch is ON
+const COURSE_AMOUNT_PAISE = 499900;   // ₹4999 — academy + full course access
+
+/** Payments the script records: ₹199 workshop (₹1 while testing) and ₹4999 course. */
+function isRecordedAmount_(paise) {
+  return paise === COURSE_AMOUNT_PAISE || isWorkshopAmount_(paise);
+}
+
+/** Academy plan for a payment amount in rupees: ₹4999 → full course, otherwise academy only. */
+function planForAmount_(rupees) {
+  return Number(rupees) === COURSE_AMOUNT_PAISE / 100 ? 'course' : 'academy';
+}
 
 /** ₹199, or ₹1 while testing. */
 function isWorkshopAmount_(paise) {
@@ -167,6 +178,7 @@ function tick() {
   try { oneTimeUpdates_(); } catch (err) { console.error(err); }
   try { checkRecentPayments(); } catch (err) { console.error(err); }
   runMessages();
+  try { syncPaidTabs_(); } catch (err) { console.error(err); }
 }
 
 /* ================= one-time updates (run automatically by the timer) ================= */
@@ -345,7 +357,7 @@ function recordPayment_(paymentId, payment, via, hint) {
 
     if (!payment && !hasKeys_()) return;                 // can't confirm with Razorpay
     const p = payment || razorpay_('/v1/payments/' + paymentId);
-    if (p.status !== 'captured' || !isWorkshopAmount_(p.amount)) return;   // only successful ₹199 (₹1 while testing)
+    if (p.status !== 'captured' || !isRecordedAmount_(p.amount)) return;   // only successful ₹199 / ₹4999 (₹1 while testing)
 
     const notes = p.notes || {};
     let email = p.email || notes.email || (hint && hint.email) || '';
@@ -403,10 +415,13 @@ function runMessages() {
     const REFUNDED = 'not sent — payment no longer successful in Razorpay';
     const sentTo = {};   // stage key -> { buyerKey: true }
     const academyOn = academyConfigured_();
-    const academyDone = {};   // email -> true once an account email went out
+    const academyDone = {};   // email -> plan already granted ('academy' | 'course')
     rows.forEach(r => {
       const e = String(r[COL.email - 1] || '').trim().toLowerCase();
-      if (e && String(r[COL.academy - 1] || '') !== '') academyDone[e] = true;
+      const cell = String(r[COL.academy - 1] || '');
+      if (!e || cell === '' || /✗/.test(cell)) return;
+      const plan = /course/.test(cell) ? 'course' : 'academy';   // older stamps without a plan = academy
+      academyDone[e] = academyDone[e] === 'course' || plan === 'course' ? 'course' : 'academy';
     });
     STAGES.forEach(st => sentTo[st.key] = {});
     rows.forEach(r => {
@@ -460,16 +475,18 @@ function runMessages() {
       let acct = null, welcomeCarried = false;
       if (needAcademy) {
         const ae = buyer.email.trim().toLowerCase();
-        if (academyDone[ae]) {
+        const plan = planForAmount_(r[2]);
+        const upgrade = academyDone[ae] === 'academy' && plan === 'course';
+        if (academyDone[ae] && !upgrade) {
           sh.getRange(i + 2, COL.academy).setValue('same person — login already sent');
         } else {
-          acct = ensureAcademyAccount_(buyer);
+          acct = ensureAcademyAccount_(buyer, plan);
           if (acct.status === 'error') {
             sh.getRange(i + 2, COL.academy).setValue(Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm') +
               ' · ✗ ' + acct.error + ' (clear this cell to retry)');
             acct = null;
           } else {
-            academyDone[ae] = true;
+            academyDone[ae] = plan;
           }
         }
       }
@@ -496,7 +513,8 @@ function runMessages() {
 
       if (acct) {
         const stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm') + ' · ' +
-          (acct.status === 'created' ? 'account created' : 'account already existed');
+          ({ created: 'account created', upgraded: 'upgraded to course', exists: 'account already existed' }[acct.status]) +
+          ' · plan: ' + acct.plan;
         if (welcomeCarried) {
           sh.getRange(i + 2, COL.academy).setValue(stamp + ' · login in welcome email');
         } else if (MailApp.getRemainingDailyQuota() >= 1) {
@@ -710,33 +728,67 @@ function academyPassword_() {
 }
 
 /**
- * Creates the student's academy login (email already confirmed). If the email already has an
- * account, it is left untouched — their existing password keeps working.
- * Returns { status: 'created', password } | { status: 'exists' } | { status: 'error', error }.
+ * Creates the student's academy login (email already confirmed) with their plan in
+ * app_metadata.plan ('academy' for ₹199, 'course' for ₹4999 — students cannot change it).
+ * An existing account keeps its password; it is only upgraded from academy to course.
+ * Returns { status: 'created', password, plan } | { status: 'exists' | 'upgraded', plan } |
+ *         { status: 'error', error }.
  */
-function ensureAcademyAccount_(buyer) {
+function ensureAcademyAccount_(buyer, plan) {
+  plan = plan === 'course' ? 'course' : 'academy';
   const p = PropertiesService.getScriptProperties();
   const base = String(p.getProperty('SUPABASE_URL') || '').replace(/\/+$/, '');
   const key = p.getProperty('SUPABASE_SERVICE_KEY');
   const email = String(buyer.email || '').trim().toLowerCase();
   if (!base || !key || !email) return { status: 'error', error: 'academy not configured' };
-  const password = academyPassword_();
-  try {
-    const res = UrlFetchApp.fetch(base + '/auth/v1/admin/users', {
-      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      headers: { apikey: key, Authorization: 'Bearer ' + key },
-      payload: JSON.stringify({ email: email, password: password, email_confirm: true,
-                                user_metadata: { name: buyer.name || '', phone: buyer.phone || '' } })
-    });
-    const code = res.getResponseCode(), body = res.getContentText();
-    if (code === 200 || code === 201) return { status: 'created', password: password };
-    if (code === 422 || /already been registered|email_exists|already exists/i.test(body)) return { status: 'exists' };
+  const headers = { apikey: key, Authorization: 'Bearer ' + key };
+  const err = (code, body) => {
     let msg = body;
     try { const j = JSON.parse(body); msg = j.msg || j.message || j.error_description || j.error || body; } catch (e) {}
     return { status: 'error', error: 'Supabase ' + code + ': ' + String(msg).slice(0, 100) };
-  } catch (err) {
-    return { status: 'error', error: String(err.message).slice(0, 120) };
+  };
+  const password = academyPassword_();
+  try {
+    const res = UrlFetchApp.fetch(base + '/auth/v1/admin/users', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: headers,
+      payload: JSON.stringify({ email: email, password: password, email_confirm: true,
+                                app_metadata: { plan: plan },
+                                user_metadata: { name: buyer.name || '', phone: buyer.phone || '' } })
+    });
+    const code = res.getResponseCode(), body = res.getContentText();
+    if (code === 200 || code === 201) return { status: 'created', password: password, plan: plan };
+    if (!(code === 422 || /already been registered|email_exists|already exists/i.test(body))) return err(code, body);
+
+    // Account exists: find it, and upgrade academy → course if this payment is the course.
+    const user = findAcademyUser_(base, headers, email);
+    if (!user) return { status: 'exists', plan: plan };
+    const current = (user.app_metadata && user.app_metadata.plan) === 'course' ? 'course' : 'academy';
+    if (plan === 'course' && current !== 'course') {
+      const up = UrlFetchApp.fetch(base + '/auth/v1/admin/users/' + user.id, {
+        method: 'put', contentType: 'application/json', muteHttpExceptions: true, headers: headers,
+        payload: JSON.stringify({ app_metadata: { plan: 'course' } })
+      });
+      if (up.getResponseCode() !== 200) return err(up.getResponseCode(), up.getContentText());
+      return { status: 'upgraded', plan: 'course' };
+    }
+    return { status: 'exists', plan: current };
+  } catch (e) {
+    return { status: 'error', error: String(e.message).slice(0, 120) };
   }
+}
+
+/** Looks an academy user up by email (admin list, up to 10,000 users). */
+function findAcademyUser_(base, headers, email) {
+  for (let page = 1; page <= 50; page++) {
+    const res = UrlFetchApp.fetch(base + '/auth/v1/admin/users?page=' + page + '&per_page=200',
+      { headers: headers, muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return null;
+    const users = (JSON.parse(res.getContentText()).users) || [];
+    const hit = users.find(u => String(u.email || '').toLowerCase() === email);
+    if (hit) return hit;
+    if (users.length < 200) return null;
+  }
+  return null;
 }
 
 /** The login box (Telugu + English) used in the welcome email and the separate login email. */
@@ -750,6 +802,10 @@ function academyBlock_(email, acct) {
       '<tr><td style="padding:4px 14px 4px 0;color:#47576B">Website</td><td><a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a></td></tr>' +
       '<tr><td style="padding:4px 14px 4px 0;color:#47576B">Login email</td><td><b>' + escape_(email) + '</b></td></tr>' +
       '<tr><td style="padding:4px 14px 4px 0;color:#47576B;vertical-align:top">Password</td><td>' + pw + '</td></tr>' +
+      '<tr><td style="padding:4px 14px 4px 0;color:#47576B;vertical-align:top">Access</td><td>' +
+        (acct.plan === 'course'
+          ? '<b>Academy + పూర్తి course / Academy + full course</b> (₹4999)'
+          : '<b>TIC AI Academy</b> (₹199 workshop)') + '</td></tr>' +
     '</table>' +
     '<p style="margin:12px 0 0;font-size:13px;color:#47576B">Login అయిన తర్వాత <b>"నా account"</b> లో password మార్చుకోవచ్చు — లేదా ఇదే password తో కొనసాగవచ్చు.<br>' +
     'After logging in you can change it under <b>"My account"</b> — or keep using this one.</p>' +
@@ -763,10 +819,14 @@ function sendAcademyEmail_(buyer, acct, s) {
   try {
     const opts = {
       to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
-      subject: '🎓 ' + (name ? name + ', ' : '') + 'your TIC AI Academy login',
+      subject: '🎓 ' + (name ? name + ', ' : '') + (acct.status === 'upgraded'
+        ? 'your TIC AI course access is unlocked' : 'your TIC AI Academy login'),
       htmlBody: emailLayout_((name ? '<p>నమస్కారం <b>' + escape_(name) + '</b> గారు 🙏<br>Dear <b>' + escape_(name) + '</b>,</p>' : '<p>నమస్కారం 🙏</p>') +
-        '<p>మీ workshop registration తో పాటు <b>TIC AI Academy</b> access కూడా మీకు ఉంది — courses, recordings, templates అన్నీ ఒకే చోట.<br>' +
-        'Your workshop registration also gives you access to the <b>TIC AI Academy</b> — courses, recordings and templates in one place.</p>' +
+        (acct.plan === 'course'
+          ? '<p>మీ ₹4999 payment తో <b>TIC AI Academy</b> మరియు <b>పూర్తి course</b> access మీకు ఉంది.<br>' +
+            'Your ₹4999 payment gives you the <b>TIC AI Academy</b> and the <b>full course</b>.</p>'
+          : '<p>మీ workshop registration తో పాటు <b>TIC AI Academy</b> access కూడా మీకు ఉంది.<br>' +
+            'Your workshop registration also gives you access to the <b>TIC AI Academy</b>.</p>') +
         academyBlock_(buyer.email, acct))
     };
     if (String(s.testing).trim().toUpperCase() === 'ON' && String(buyer.email).toLowerCase() !== OWNER_EMAIL) opts.bcc = OWNER_EMAIL;
@@ -776,6 +836,48 @@ function sendAcademyEmail_(buyer, acct, s) {
     console.error(err);
     return false;
   }
+}
+
+/* ================= "Paid ₹199" / "Paid ₹4999" tabs ================= */
+
+const PAID_TABS = [
+  { name: 'Paid ₹199', rupees: 199 },
+  { name: 'Paid ₹4999', rupees: 4999 }
+];
+const PAID_TAB_HEADERS = ['Email', 'Name', 'WhatsApp / Phone', 'Last paid at', 'Payments', 'Latest payment ID', 'Academy account'];
+
+/** Rebuilds one tab per price from the Payments tab: one row per email, successful payments only. */
+function syncPaidTabs_() {
+  const ss = ss_();
+  const pay = ss.getSheetByName(PAYMENTS_SHEET);
+  const rows = pay && pay.getLastRow() > 1
+    ? pay.getRange(2, 1, pay.getLastRow() - 1, PAYMENT_HEADERS.length).getValues() : [];
+  PAID_TABS.forEach(tab => {
+    const byEmail = {};
+    rows.forEach(r => {
+      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured' || Number(r[2]) !== tab.rupees) return;
+      const email = String(r[COL.email - 1] || '').trim().toLowerCase();
+      const key = email || String(r[COL.phone - 1] || '');
+      if (!key) return;
+      const t = isDate_(r[0]) ? r[0].getTime() : 0;
+      const cur = byEmail[key];
+      if (!cur) byEmail[key] = { email: email, name: r[COL.name - 1], phone: r[COL.phone - 1], t: t, at: r[0], n: 1, pid: r[1], academy: r[COL.academy - 1] };
+      else {
+        cur.n++;
+        if (t >= cur.t) Object.assign(cur, { name: r[COL.name - 1] || cur.name, phone: r[COL.phone - 1] || cur.phone, t: t, at: r[0], pid: r[1] });
+        if (!cur.academy || /^same person/.test(cur.academy)) cur.academy = r[COL.academy - 1] || cur.academy;
+      }
+    });
+    const list = Object.keys(byEmail).map(k => byEmail[k]).sort((a, b) => b.t - a.t);
+    let sh = ss.getSheetByName(tab.name);
+    if (!sh) { sh = ss.insertSheet(tab.name); sh.setFrozenRows(1); }
+    sh.clearContents();
+    sh.getRange(1, 1, 1, PAID_TAB_HEADERS.length).setValues([PAID_TAB_HEADERS]).setFontWeight('bold');
+    if (list.length) {
+      sh.getRange(2, 1, list.length, PAID_TAB_HEADERS.length).setValues(list.map(x =>
+        [x.email, x.name, x.phone, x.at, x.n, x.pid, x.academy]));
+    }
+  });
 }
 
 /* ================= WhatsApp (Meta Cloud API) ================= */
@@ -839,7 +941,7 @@ function notifyOwner_(p, name, email, phone, via) {
              escape_(r[1] || '—') + '</b></td></tr>').join('');
   MailApp.sendEmail({
     to: OWNER_EMAIL,
-    subject: '✅ New ₹' + (p.amount / 100) + ' workshop payment — ' + (name || email || phone || p.id),
+    subject: '✅ New ₹' + (p.amount / 100) + ' payment — ' + (name || email || phone || p.id),
     htmlBody: '<p>Razorpay confirmed a successful payment for the ' + WORKSHOP_NAME +
               '. The buyer\'s welcome email is on its way.</p>' +
               '<table>' + rows + '</table>' +
@@ -981,7 +1083,7 @@ function checkSetup() {
     try {
       const res = razorpay_('/v1/payments?count=100&from=' + (Math.floor(Date.now() / 1000) - 7 * 24 * 3600));
       const items = res.items || [];
-      const good = items.filter(p => p.status === 'captured' && isWorkshopAmount_(p.amount));
+      const good = items.filter(p => p.status === 'captured' && isRecordedAmount_(p.amount));
       ok(true, 'Razorpay connection works. Last 7 days: ' + items.length + ' payments, ' + good.length + ' successful ₹199');
       good.slice(0, 10).forEach(p => lines.push('     • ' + p.id + '  ' + (p.email || '') + '  ' + (p.contact || '') + '  ' +
         Utilities.formatDate(new Date(p.created_at * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST'));
