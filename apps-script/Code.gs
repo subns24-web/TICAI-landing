@@ -29,6 +29,12 @@ const SHEET_ID = '1CpZI9srdFq_H44pJv5SK3QQb0XymaVMFGnKNnRvvlUg';
 const OWNER_EMAIL   = 'subns24@gmail.com';
 const AMOUNT_PAISE  = 19900;   // ₹199 — only payments of exactly this amount are recorded
 const TEST_AMOUNT_PAISE = 100; // ₹1 — also accepted while the Settings "Testing" switch is ON
+const COURSE_AMOUNT_PAISE = 499900;   // ₹4999 — academy + full course access
+
+/** Payments the script records: ₹199 workshop (₹1 while testing) and ₹4999 course. */
+function isRecordedAmount_(paise) {
+  return paise === COURSE_AMOUNT_PAISE || isWorkshopAmount_(paise);
+}
 
 /** ₹199, or ₹1 while testing. */
 function isWorkshopAmount_(paise) {
@@ -36,8 +42,8 @@ function isWorkshopAmount_(paise) {
   if (paise !== TEST_AMOUNT_PAISE) return false;
   try { return String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) { return false; }
 }
-const WORKSHOP_NAME = 'SNTG Live AI Workshop (Telugu)';
-const SENDER_NAME   = 'SNTG AI Workshop';
+const WORKSHOP_NAME = 'TIC-AI Live AI Workshop (Telugu)';
+const SENDER_NAME   = 'TIC-AI Workshop';
 const WORKSHOP_HOURS = 2;   // 10 AM – 12 PM
 
 const LEADS_SHEET    = 'Leads';
@@ -46,8 +52,13 @@ const SETTINGS_SHEET = 'Settings';
 const LEAD_HEADERS    = ['Submitted at', 'Name', 'WhatsApp', 'Email', 'Business', 'Language', 'Page'];
 const PAYMENT_HEADERS = ['Paid at', 'Payment ID', 'Amount (₹)', 'Name', 'Email', 'WhatsApp / Phone',
                          'Method', 'Status', 'Recorded via', 'Razorpay notes',
-                         'Welcome sent', 'Reminder sent', 'Live link sent', 'Thank-you sent'];
-const COL = { name: 4, email: 5, phone: 6, status: 8 };   // 1-based columns in Payments
+                         'Welcome sent', 'Reminder sent', 'Live link sent', 'Thank-you sent',
+                         'Website access sent'];
+const COL = { name: 4, email: 5, phone: 6, status: 8, access: 15 };   // 1-based columns in Payments
+
+// Free website access email: sent to every buyer right after the welcome email.
+const ACADEMY_URL = 'https://tic-ai-academy.vercel.app/';
+const ACADEMY_TEMP_PASSWORD = 'ticai2026';
 
 // Settings tab: label → default value. Edit the values in the sheet, not here.
 const SETTINGS = {
@@ -66,6 +77,7 @@ const HOUR = 3600 * 1000, MIN = 60 * 1000;
 // Each stage: Payments column it stamps, and when it is due relative to the workshop start.
 const STAGES = [
   { key: 'welcome',  col: 11, due: (now, start) => true },
+  { key: 'access',   col: 15, due: (now, start) => true },   // free website access + login
   { key: 'reminder', col: 12, due: (now, start) => now >= start - 16 * HOUR && now < start - 70 * MIN },
   { key: 'live',     col: 13, due: (now, start) => now >= start - 60 * MIN && now < start + WORKSHOP_HOURS * HOUR },
   { key: 'thanks',   col: 14, due: (now, start) => now >= start + (WORKSHOP_HOURS + 0.5) * HOUR && now < start + 72 * HOUR }
@@ -80,7 +92,7 @@ function doGet(e) {
     try { out = checkRegistered_(q.email, q.phone); } catch (err) { console.error(err); }
     return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
   }
-  return ContentService.createTextOutput('SNTG sheet endpoint is running.');
+  return ContentService.createTextOutput('TIC-AI sheet endpoint is running.');
 }
 
 /**
@@ -115,6 +127,7 @@ function checkRegistered_(email, phone) {
     props.setProperty(key, String(Date.now()));
     const start = workshopStart_(s);
     sendStage_('welcome', buyer, s, start);                     // has the WhatsApp Community link
+    sendStage_('access', buyer, s, start);                      // website link + login
     if (s.live) sendStage_('live', buyer, s, start);            // Zoom link, once it is in Settings
     else MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
       subject: '🔴 Your Zoom link — ' + WORKSHOP_NAME,
@@ -147,11 +160,12 @@ function doPost(e) {
 /** Sheet menu (shows when the script was opened from the sheet via Extensions → Apps Script). */
 function onOpen() {
   try {
-    SpreadsheetApp.getUi().createMenu('SNTG')
+    SpreadsheetApp.getUi().createMenu('TIC-AI')
       .addItem('Send due messages now', 'runMessages')
-      .addItem('Send all 4 test messages to me', 'sendTestToMe')
+      .addItem('Send the website-access test email to me', 'sendAccessTestToMe')
+      .addItem('Send all 5 test messages to me', 'sendTestToMe')
       .addItem('Resend already-sent emails to all buyers', 'resendToAllBuyers')
-      .addItem('Send all 4 test messages to the latest form entry', 'sendTestToLatestLead')
+      .addItem('Send all 5 test messages to the latest form entry', 'sendTestToLatestLead')
       .addToUi();
   } catch (err) { /* not opened from the sheet */ }
 }
@@ -161,6 +175,7 @@ function tick() {
   try { oneTimeUpdates_(); } catch (err) { console.error(err); }
   try { checkRecentPayments(); } catch (err) { console.error(err); }
   runMessages();
+  try { syncPaidTabs_(); } catch (err) { console.error(err); }
 }
 
 /* ================= one-time updates (run automatically by the timer) ================= */
@@ -229,6 +244,12 @@ function oneTimeUpdates_() {
   // Show every time in the sheet in India time (it was created on GMT).
   if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
 
+  if (!props.getProperty('DONE_ACCESS_HEADER_V1')) {
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    sh.getRange(1, COL.access).setValue(PAYMENT_HEADERS[COL.access - 1]);
+    props.setProperty('DONE_ACCESS_HEADER_V1', new Date().toISOString());
+  }
+
   if (!props.getProperty('DONE_DATE_2026_11_22')) {
     const sh = ensureSettings_();
     const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
@@ -273,7 +294,7 @@ function oneTimeUpdates_() {
     const start = workshopStart_(s);
     const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
     const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
-    MailApp.sendEmail(OWNER_EMAIL, 'SNTG: script updated ✅ test emails sent',
+    MailApp.sendEmail(OWNER_EMAIL, 'TIC-AI: script updated ✅ test emails sent',
       'The new script is running.\n\nWorkshop date in Settings: ' + settings_().date +
       '\nTest emails sent to ' + (lead.name || '(no name)') + ' <' + lead.email + '>:\n' + out.join('\n') +
       '\n\nSheet: ' + ss_().getUrl());
@@ -339,7 +360,7 @@ function recordPayment_(paymentId, payment, via, hint) {
 
     if (!payment && !hasKeys_()) return;                 // can't confirm with Razorpay
     const p = payment || razorpay_('/v1/payments/' + paymentId);
-    if (p.status !== 'captured' || !isWorkshopAmount_(p.amount)) return;   // only successful ₹199 (₹1 while testing)
+    if (p.status !== 'captured' || !isRecordedAmount_(p.amount)) return;   // only successful ₹199 / ₹4999 (₹1 while testing)
 
     const notes = p.notes || {};
     let email = p.email || notes.email || (hint && hint.email) || '';
@@ -483,7 +504,9 @@ function sendStage_(key, buyer, s, start) {
     parts.push('no email');
   }
 
-  if (waConfigured_()) {
+  if (!m.waTemplate) {
+    // email only (no approved WhatsApp template for this message)
+  } else if (waConfigured_()) {
     const to = normalizePhone_(buyer.phone);
     if (!to) parts.push('no WhatsApp number');
     else {
@@ -526,6 +549,24 @@ function message_(key, b, s, start) {
             '<p>We will send the live link 1 hour before the workshop.</p>',
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
     };
+    case 'access': return {
+      subject: '🎁 Congratulations' + (fullName ? ' ' + fullName : '') + '! You have free access to our website',
+      html: hi + '<p><b>Congratulations!</b> 🎉 మీకు మా website కి <b>free access</b> లభించింది.<br>' +
+            'As a workshop participant, you get <b>free access to our website</b> — TIC AI Academy.</p>' +
+            // Opens the login page with the email and password already filled in (password in the
+            // #fragment, which is never sent to the server).
+            button(ACADEMY_URL + 'login?email=' + encodeURIComponent(String(b.email || '').trim()) +
+                   '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD), 'Log in to the website →', '#004AAD') +
+            '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
+              '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
+              '<p style="margin:0">Website: <a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a><br>' +
+              'Login ID: <b>' + escape_(b.email) + '</b> (మీరు register చేసిన email / your registered email)<br>' +
+              'Temporary password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code></p>' +
+            '</div>' +
+            '<p>మీరు register చేసిన email మరియు పై temporary password తో login అవ్వండి. Login అయిన తర్వాత మీ సొంత password పెట్టుకోవచ్చు.<br>' +
+            'Log in with your registered email and the temporary password above. You can set your own password after logging in.</p>',
+      waTemplate: null, waParams: []
+    };
     case 'reminder': return {
       subject: '⏰ ' + who + 'your workshop is tomorrow — ' + WORKSHOP_NAME,
       html: hi + '<p>A quick reminder — your workshop is <b>tomorrow</b>.</p>' +
@@ -557,7 +598,7 @@ function message_(key, b, s, start) {
 
 function emailLayout_(inner) {
   return '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#04101F;max-width:560px">' +
-         inner + '<p>— Team SNTG</p>' +
+         inner + '<p>— Team TIC-AI<br><span style="color:#47576B;font-size:13px">Telugu International Council of AI for Business</span></p>' +
          '<p style="color:#7A8CA3;font-size:12px">Questions? Just reply to this email.</p></div>';
 }
 
@@ -580,6 +621,14 @@ function sendTestToMe() {
   const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, me, sTest, start));
   console.log(out.join('\n'));
+  return out;
+}
+
+/** Sends just the "free access to our website" email to you (subns24@gmail.com). Changes nothing in the sheet. */
+function sendAccessTestToMe() {
+  const s = settings_();
+  const out = sendStage_('access', { name: 'Test', email: OWNER_EMAIL, phone: '' }, s, workshopStart_(s));
+  console.log('Website-access test email → ' + OWNER_EMAIL + ': ' + out);
   return out;
 }
 
@@ -646,6 +695,48 @@ function sendTestToLatestLead() {
   return out;
 }
 
+/* ================= "Paid ₹199" / "Paid ₹4999" tabs ================= */
+
+const PAID_TABS = [
+  { name: 'Paid ₹199', rupees: 199 },
+  { name: 'Paid ₹4999', rupees: 4999 }
+];
+const PAID_TAB_HEADERS = ['Email', 'Name', 'WhatsApp / Phone', 'Last paid at', 'Payments', 'Latest payment ID', 'Website access sent'];
+
+/** Rebuilds one tab per price from the Payments tab: one row per email, successful payments only. */
+function syncPaidTabs_() {
+  const ss = ss_();
+  const pay = ss.getSheetByName(PAYMENTS_SHEET);
+  const rows = pay && pay.getLastRow() > 1
+    ? pay.getRange(2, 1, pay.getLastRow() - 1, PAYMENT_HEADERS.length).getValues() : [];
+  PAID_TABS.forEach(tab => {
+    const byEmail = {};
+    rows.forEach(r => {
+      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured' || Number(r[2]) !== tab.rupees) return;
+      const email = String(r[COL.email - 1] || '').trim().toLowerCase();
+      const key = email || String(r[COL.phone - 1] || '');
+      if (!key) return;
+      const t = isDate_(r[0]) ? r[0].getTime() : 0;
+      const cur = byEmail[key];
+      if (!cur) byEmail[key] = { email: email, name: r[COL.name - 1], phone: r[COL.phone - 1], t: t, at: r[0], n: 1, pid: r[1], academy: r[COL.access - 1] };
+      else {
+        cur.n++;
+        if (t >= cur.t) Object.assign(cur, { name: r[COL.name - 1] || cur.name, phone: r[COL.phone - 1] || cur.phone, t: t, at: r[0], pid: r[1] });
+        if (!cur.academy || /same person/.test(cur.academy)) cur.academy = r[COL.access - 1] || cur.academy;
+      }
+    });
+    const list = Object.keys(byEmail).map(k => byEmail[k]).sort((a, b) => b.t - a.t);
+    let sh = ss.getSheetByName(tab.name);
+    if (!sh) { sh = ss.insertSheet(tab.name); sh.setFrozenRows(1); }
+    sh.clearContents();
+    sh.getRange(1, 1, 1, PAID_TAB_HEADERS.length).setValues([PAID_TAB_HEADERS]).setFontWeight('bold');
+    if (list.length) {
+      sh.getRange(2, 1, list.length, PAID_TAB_HEADERS.length).setValues(list.map(x =>
+        [x.email, x.name, x.phone, x.at, x.n, x.pid, x.academy]));
+    }
+  });
+}
+
 /* ================= WhatsApp (Meta Cloud API) ================= */
 
 function waConfigured_() {
@@ -707,7 +798,7 @@ function notifyOwner_(p, name, email, phone, via) {
              escape_(r[1] || '—') + '</b></td></tr>').join('');
   MailApp.sendEmail({
     to: OWNER_EMAIL,
-    subject: '✅ New ₹' + (p.amount / 100) + ' workshop payment — ' + (name || email || phone || p.id),
+    subject: '✅ New ₹' + (p.amount / 100) + ' payment — ' + (name || email || phone || p.id),
     htmlBody: '<p>Razorpay confirmed a successful payment for the ' + WORKSHOP_NAME +
               '. The buyer\'s welcome email is on its way.</p>' +
               '<table>' + rows + '</table>' +
@@ -849,7 +940,7 @@ function checkSetup() {
     try {
       const res = razorpay_('/v1/payments?count=100&from=' + (Math.floor(Date.now() / 1000) - 7 * 24 * 3600));
       const items = res.items || [];
-      const good = items.filter(p => p.status === 'captured' && isWorkshopAmount_(p.amount));
+      const good = items.filter(p => p.status === 'captured' && isRecordedAmount_(p.amount));
       ok(true, 'Razorpay connection works. Last 7 days: ' + items.length + ' payments, ' + good.length + ' successful ₹199');
       good.slice(0, 10).forEach(p => lines.push('     • ' + p.id + '  ' + (p.email || '') + '  ' + (p.contact || '') + '  ' +
         Utilities.formatDate(new Date(p.created_at * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST'));
@@ -892,6 +983,6 @@ function setup() {
   else notes.push('NO Razorpay keys — payments cannot be confirmed, nothing will be recorded');
   notes.push(waConfigured_() ? 'WhatsApp ON' : 'WhatsApp off (add WA_TOKEN + WA_PHONE_NUMBER_ID)');
   console.log('Setup done: tabs ready, 5-minute timer installed, ' + notes.join(', ') + '.');
-  MailApp.sendEmail(OWNER_EMAIL, 'SNTG sheet connected ✅',
+  MailApp.sendEmail(OWNER_EMAIL, 'TIC-AI sheet connected ✅',
     'Your workshop sheet is connected (' + notes.join(', ') + '): ' + ss_().getUrl());
 }
