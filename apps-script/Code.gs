@@ -42,8 +42,8 @@ function isWorkshopAmount_(paise) {
   if (paise !== TEST_AMOUNT_PAISE) return false;
   try { return String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) { return false; }
 }
-const WORKSHOP_NAME = 'SNTG Live AI Workshop (Telugu)';
-const SENDER_NAME   = 'SNTG AI Workshop';
+const WORKSHOP_NAME = 'TIC-AI Live AI Workshop (Telugu)';
+const SENDER_NAME   = 'TIC-AI Workshop';
 const WORKSHOP_HOURS = 2;   // 10 AM – 12 PM
 
 const LEADS_SHEET    = 'Leads';
@@ -92,7 +92,7 @@ function doGet(e) {
     try { out = checkRegistered_(q.email, q.phone); } catch (err) { console.error(err); }
     return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
   }
-  return ContentService.createTextOutput('SNTG sheet endpoint is running.');
+  return ContentService.createTextOutput('TIC-AI sheet endpoint is running.');
 }
 
 /**
@@ -293,7 +293,7 @@ function oneTimeUpdates_() {
     const start = workshopStart_(s);
     const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
     const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
-    MailApp.sendEmail(OWNER_EMAIL, 'SNTG: script updated ✅ test emails sent',
+    MailApp.sendEmail(OWNER_EMAIL, 'TIC-AI: script updated ✅ test emails sent',
       'The new script is running.\n\nWorkshop date in Settings: ' + settings_().date +
       '\nTest emails sent to ' + (lead.name || '(no name)') + ' <' + lead.email + '>:\n' + out.join('\n') +
       '\n\nSheet: ' + ss_().getUrl());
@@ -594,7 +594,7 @@ function message_(key, b, s, start) {
 
 function emailLayout_(inner) {
   return '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#04101F;max-width:560px">' +
-         inner + '<p>— Team SNTG</p>' +
+         inner + '<p>— Team TIC-AI<br><span style="color:#47576B;font-size:13px">Telugu International Council of AI for Business</span></p>' +
          '<p style="color:#7A8CA3;font-size:12px">Questions? Just reply to this email.</p></div>';
 }
 
@@ -971,6 +971,6 @@ function setup() {
   else notes.push('NO Razorpay keys — payments cannot be confirmed, nothing will be recorded');
   notes.push(waConfigured_() ? 'WhatsApp ON' : 'WhatsApp off (add WA_TOKEN + WA_PHONE_NUMBER_ID)');
   console.log('Setup done: tabs ready, 5-minute timer installed, ' + notes.join(', ') + '.');
-  MailApp.sendEmail(OWNER_EMAIL, 'SNTG sheet connected ✅',
+  MailApp.sendEmail(OWNER_EMAIL, 'TIC-AI sheet connected ✅',
     'Your workshop sheet is connected (' + notes.join(', ') + '): ' + ss_().getUrl());
 }
