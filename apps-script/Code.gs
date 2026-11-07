@@ -160,11 +160,12 @@ function doPost(e) {
 /** Sheet menu (shows when the script was opened from the sheet via Extensions → Apps Script). */
 function onOpen() {
   try {
-    SpreadsheetApp.getUi().createMenu('SNTG')
+    SpreadsheetApp.getUi().createMenu('TIC-AI')
       .addItem('Send due messages now', 'runMessages')
-      .addItem('Send all 4 test messages to me', 'sendTestToMe')
+      .addItem('Send the website-access test email to me', 'sendAccessTestToMe')
+      .addItem('Send all 5 test messages to me', 'sendTestToMe')
       .addItem('Resend already-sent emails to all buyers', 'resendToAllBuyers')
-      .addItem('Send all 4 test messages to the latest form entry', 'sendTestToLatestLead')
+      .addItem('Send all 5 test messages to the latest form entry', 'sendTestToLatestLead')
       .addToUi();
   } catch (err) { /* not opened from the sheet */ }
 }
@@ -552,7 +553,10 @@ function message_(key, b, s, start) {
       subject: '🎁 Congratulations' + (fullName ? ' ' + fullName : '') + '! You have free access to our website',
       html: hi + '<p><b>Congratulations!</b> 🎉 మీకు మా website కి <b>free access</b> లభించింది.<br>' +
             'As a workshop participant, you get <b>free access to our website</b> — TIC AI Academy.</p>' +
-            button(ACADEMY_URL, 'Open the website →', '#004AAD') +
+            // Opens the login page with the email and password already filled in (password in the
+            // #fragment, which is never sent to the server).
+            button(ACADEMY_URL + 'login?email=' + encodeURIComponent(String(b.email || '').trim()) +
+                   '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD), 'Log in to the website →', '#004AAD') +
             '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
               '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
               '<p style="margin:0">Website: <a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a><br>' +
@@ -617,6 +621,14 @@ function sendTestToMe() {
   const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, me, sTest, start));
   console.log(out.join('\n'));
+  return out;
+}
+
+/** Sends just the "free access to our website" email to you (subns24@gmail.com). Changes nothing in the sheet. */
+function sendAccessTestToMe() {
+  const s = settings_();
+  const out = sendStage_('access', { name: 'Test', email: OWNER_EMAIL, phone: '' }, s, workshopStart_(s));
+  console.log('Website-access test email → ' + OWNER_EMAIL + ': ' + out);
   return out;
 }
 
