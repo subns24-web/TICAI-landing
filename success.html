@@ -104,7 +104,8 @@ footer{color:rgba(255,255,255,.55);font-size:.78rem;margin-top:22px;text-align:c
 
   <a class="btn i18n" id="wa" href="#" target="_blank" rel="noopener" hidden
      data-te="WhatsApp లో మాకు message చేయండి →" data-en="Message us on WhatsApp →"></a>
-  <a class="btn ghost i18n" href="index.html" data-te="← Home page కి వెళ్ళండి" data-en="← Back to the home page"></a>
+  <a class="btn i18n" id="bonus" href="https://tic-ai-academy.vercel.app/login" style="margin-top:10px"
+     data-te="🎁 Bonus website access ఇక్కడ Unlock చేయండి →" data-en="🎁 Unlock bonus website access here →"></a>
 
   <p class="note i18n"
      data-te="Email రాకపోతే spam/promotions folder చూడండి, లేదా subns24@gmail.com కి మీ payment ID తో mail చేయండి."
@@ -152,6 +153,11 @@ function setLang(l){
   try{ localStorage.setItem('sntg_lang', l); }catch(e){}
 }
 setLang((()=>{ try{ return localStorage.getItem('sntg_lang') || 'te'; }catch(e){ return 'te'; } })());
+
+// Bonus website button: open the login page with the registered email already filled in.
+if(lead.email){
+  document.getElementById('bonus').href = 'https://tic-ai-academy.vercel.app/login?email=' + encodeURIComponent(String(lead.email).trim());
+}
 
 if(!/X/i.test(WHATSAPP_NUMBER)){
   const wa = document.getElementById('wa');
