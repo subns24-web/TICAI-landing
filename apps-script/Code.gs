@@ -59,6 +59,8 @@ const COL = { name: 4, email: 5, phone: 6, status: 8, access: 15 };   // 1-based
 // Free website access email: sent to every buyer right after the welcome email.
 const ACADEMY_URL = 'https://tic-ai-academy.vercel.app/';
 const ACADEMY_TEMP_PASSWORD = 'ticai2026';
+// "Install the app" page: adds the website to the phone's home screen like an app.
+const ACADEMY_APP_URL = ACADEMY_URL + 'app';
 // Website logins live in this Supabase project. Each new paid student gets an account with the
 // password above. Needs Script property SUPABASE_SERVICE_KEY (the project's secret
 // service_role key — never put it in the code or a chat).
@@ -574,7 +576,14 @@ function message_(key, b, s, start) {
             '<p>మీరు register చేసిన email మరియు పై temporary password తో login అవ్వండి. Login అయిన తర్వాత మీ సొంత password పెట్టుకోవచ్చు.<br>' +
             'Log in with your registered email and the temporary password above. You can set your own password after logging in.</p>' +
             '<p style="font-size:13px;color:#47576B">మీరు ఇప్పటికే password మార్చుకుంటే, మీ password నే వాడండి — మర్చిపోతే login page లో "Password మర్చిపోయారా?" నొక్కండి.<br>' +
-            'Already changed your password? Use yours — or tap "Forgot password?" on the login page.</p>',
+            'Already changed your password? Use yours — or tap "Forgot password?" on the login page.</p>' +
+            // Install link: adds TIC AI to the phone's home screen (Android button / iPhone steps).
+            '<div style="border-top:1px solid #eee;margin-top:22px;padding-top:16px">' +
+              '<p style="margin:0"><b>📱 TIC AI app ని మీ phone లో install చేసుకోండి</b><br>' +
+              'Install the TIC AI app on your phone — open your courses straight from the home screen.</p>' +
+              button(ACADEMY_APP_URL, '📱 Install the TIC AI app / App install చేయండి', '#B8892A') +
+              '<p style="font-size:13px;color:#47576B;margin:0">Android: tap the button, then "Install". iPhone: open the link in Safari → Share → "Add to Home Screen".</p>' +
+            '</div>',
       waTemplate: null, waParams: []
     };
     case 'reminder': return {
