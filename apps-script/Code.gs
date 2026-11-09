@@ -59,6 +59,10 @@ const COL = { name: 4, email: 5, phone: 6, status: 8, access: 15 };   // 1-based
 // Free website access email: sent to every buyer right after the welcome email.
 const ACADEMY_URL = 'https://tic-ai-academy.vercel.app/';
 const ACADEMY_TEMP_PASSWORD = 'ticai2026';
+// Website logins live in this Supabase project. Each new paid student gets an account with the
+// password above. Needs Script property SUPABASE_SERVICE_KEY (the project's secret
+// service_role key — never put it in the code or a chat).
+const SUPABASE_URL = 'https://xexcztrlcnqptlhjxqjg.supabase.co';
 
 // Settings tab: label → default value. Edit the values in the sheet, not here.
 const SETTINGS = {
@@ -163,6 +167,7 @@ function onOpen() {
     SpreadsheetApp.getUi().createMenu('TIC-AI')
       .addItem('Send due messages now', 'runMessages')
       .addItem('Send the website-access test email to me', 'sendAccessTestToMe')
+      .addItem('Create website logins for past buyers (no emails)', 'createAccountsForPastBuyers')
       .addItem('Send all 5 test messages to me', 'sendTestToMe')
       .addItem('Resend already-sent emails to all buyers', 'resendToAllBuyers')
       .addItem('Send all 5 test messages to the latest form entry', 'sendTestToLatestLead')
@@ -467,13 +472,16 @@ function runMessages() {
         if (st.key === 'live' && !s.live && !allNow) { alertMissingLiveLink_(); continue; }
         const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
         const testing = String(s.testing).trim().toUpperCase() === 'ON';
-        if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP); r[st.col - 1] = DUP; continue; }
+        // Website login: create it (or upgrade ₹199 → ₹4999) before the access email goes out.
+        // Runs even for a repeat buyer, so a later ₹4999 payment still upgrades the account.
+        const acctNote = st.key === 'access' ? ' · ' + ensureAcademyAccount_(buyer, planForAmount_(r[2])).note : '';
+        if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP + acctNote); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
         // Testing preview of a later email (sent early): don't stamp it, so the real one still
         // goes at its scheduled time (21 Nov 6 PM reminder, 22 Nov 9 AM live link, 12:30 PM thank-you).
         const preview = allNow && st.key !== 'welcome' && !st.due(now, start.getTime());
         const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
-        const result = sendStage_(st.key, buyer, sSend, start);
+        const result = sendStage_(st.key, buyer, sSend, start) + acctNote;
         if (preview) continue;
         sh.getRange(i + 2, st.col).setValue(result);
         r[st.col - 1] = result;
@@ -564,7 +572,9 @@ function message_(key, b, s, start) {
               'Temporary password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code></p>' +
             '</div>' +
             '<p>మీరు register చేసిన email మరియు పై temporary password తో login అవ్వండి. Login అయిన తర్వాత మీ సొంత password పెట్టుకోవచ్చు.<br>' +
-            'Log in with your registered email and the temporary password above. You can set your own password after logging in.</p>',
+            'Log in with your registered email and the temporary password above. You can set your own password after logging in.</p>' +
+            '<p style="font-size:13px;color:#47576B">మీరు ఇప్పటికే password మార్చుకుంటే, మీ password నే వాడండి — మర్చిపోతే login page లో "Password మర్చిపోయారా?" నొక్కండి.<br>' +
+            'Already changed your password? Use yours — or tap "Forgot password?" on the login page.</p>',
       waTemplate: null, waParams: []
     };
     case 'reminder': return {
@@ -694,6 +704,130 @@ function sendTestToLatestLead() {
   console.log('Sent to ' + lead.name + ' <' + lead.email + '>\n' + out.join('\n'));
   return out;
 }
+
+/* ================= Website logins (Supabase Auth) ================= */
+
+/** Plan for a payment amount in rupees: ₹4999 → 'course', anything else → 'academy'. */
+function planForAmount_(rupees) {
+  return Number(rupees) === COURSE_AMOUNT_PAISE / 100 ? 'course' : 'academy';
+}
+
+/**
+ * Makes sure the buyer has a website login. New account: password ACADEMY_TEMP_PASSWORD, email
+ * already confirmed, plan in app_metadata.plan (students cannot change it). Existing account:
+ * password left alone; plan only ever goes up (academy → course).
+ * Returns { status: 'created'|'exists'|'upgraded'|'off'|'error', note } — note is stamped in the sheet.
+ */
+function ensureAcademyAccount_(buyer, plan) {
+  plan = plan === 'course' ? 'course' : 'academy';
+  const key = PropertiesService.getScriptProperties().getProperty('SUPABASE_SERVICE_KEY');
+  const email = String(buyer.email || '').trim().toLowerCase();
+  if (!key) return { status: 'off', note: 'account not created (SUPABASE_SERVICE_KEY not set)' };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { status: 'error', note: 'account ✗ no valid email' };
+  // The key goes in the apikey header only: that works for both the new sb_secret_… keys and
+  // the legacy service_role key (Supabase rejects an sb_secret_ key sent as a Bearer token).
+  const headers = { apikey: key };
+  const fail = (code, body) => {
+    let msg = body;
+    try { const j = JSON.parse(body); msg = j.msg || j.message || j.error_description || j.error || body; } catch (e) {}
+    console.error('Supabase ' + code + ': ' + body);
+    return { status: 'error', note: 'account ✗ Supabase ' + code + ': ' + String(msg).slice(0, 80) };
+  };
+  try {
+    const res = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/admin/users', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: headers,
+      payload: JSON.stringify({ email: email, password: ACADEMY_TEMP_PASSWORD, email_confirm: true,
+                                app_metadata: { plan: plan },
+                                user_metadata: { name: buyer.name || '', phone: buyer.phone || '' } })
+    });
+    const code = res.getResponseCode(), body = res.getContentText();
+    if (code === 200 || code === 201) return { status: 'created', note: 'account created (' + plan + ')' };
+    if (!(code === 422 || /already been registered|email_exists|already exists/i.test(body))) return fail(code, body);
+
+    const user = findAcademyUser_(headers, email);
+    if (!user) return { status: 'exists', note: 'account already existed' };
+    const current = (user.app_metadata && user.app_metadata.plan) === 'course' ? 'course' : 'academy';
+    if (plan === 'course' && current !== 'course') {
+      const up = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/admin/users/' + user.id, {
+        method: 'put', contentType: 'application/json', muteHttpExceptions: true, headers: headers,
+        payload: JSON.stringify({ app_metadata: Object.assign({}, user.app_metadata, { plan: 'course' }) })
+      });
+      if (up.getResponseCode() !== 200) return fail(up.getResponseCode(), up.getContentText());
+      return { status: 'upgraded', note: 'account upgraded to course' };
+    }
+    return { status: 'exists', note: 'account already existed (' + current + ')' };
+  } catch (e) {
+    console.error(e);
+    return { status: 'error', note: 'account ✗ ' + String(e.message).slice(0, 80) };
+  }
+}
+
+/**
+ * One-off: gives every buyer already in Payments a website login (password ACADEMY_TEMP_PASSWORD,
+ * plan from their highest payment). Sends NO emails. Safe to run again: rows whose
+ * "Website access sent" cell already mentions an account are skipped, and existing accounts
+ * keep their password. Run from the TIC-AI menu or the editor.
+ */
+function createAccountsForPastBuyers() {
+  if (!PropertiesService.getScriptProperties().getProperty('SUPABASE_SERVICE_KEY')) {
+    const msg = 'Add Script property SUPABASE_SERVICE_KEY first (Project Settings → Script properties).';
+    console.log(msg);
+    return msg;
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    if (sh.getLastRow() < 2) return 'No payments yet.';
+    const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+    const people = {};   // email -> { buyer, plan, rows: [row numbers needing a stamp] }
+    rows.forEach((r, i) => {
+      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
+      const email = String(r[COL.email - 1] || '').trim().toLowerCase();
+      if (!email) return;
+      const p = people[email] || (people[email] = { buyer: { name: String(r[COL.name - 1] || ''), email: email,
+                                    phone: String(r[COL.phone - 1] || '') }, plan: 'academy', rows: [], done: false });
+      if (planForAmount_(r[2]) === 'course') p.plan = 'course';
+      const cell = String(r[COL.access - 1] || '');
+      if (/account (created|upgraded|already existed)/.test(cell)) p.done = true;
+      else p.rows.push(i + 2);
+    });
+    const out = [];
+    Object.keys(people).forEach(email => {
+      const p = people[email];
+      if (p.done && p.plan !== 'course') { out.push(email + ': skipped (account already handled)'); return; }
+      if (!p.rows.length) { out.push(email + ': skipped'); return; }
+      const res = ensureAcademyAccount_(p.buyer, p.plan);
+      p.rows.forEach(rn => {
+        const cell = sh.getRange(rn, COL.access);
+        const prev = String(cell.getValue() || '');
+        cell.setValue((prev ? prev + ' · ' : '') + res.note + ' (past buyer, no email)');
+      });
+      out.push(email + ': ' + res.note);
+    });
+    const summary = 'Website logins for past buyers (no emails sent):\n' + out.join('\n');
+    console.log(summary);
+    try { SpreadsheetApp.getUi().alert(summary); } catch (e) { /* run from the editor */ }
+    return summary;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Looks a website user up by email (admin list, up to 10,000 users). */
+function findAcademyUser_(headers, email) {
+  for (let page = 1; page <= 50; page++) {
+    const res = UrlFetchApp.fetch(SUPABASE_URL + '/auth/v1/admin/users?page=' + page + '&per_page=200',
+      { headers: headers, muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return null;
+    const users = (JSON.parse(res.getContentText()).users) || [];
+    const hit = users.find(u => String(u.email || '').toLowerCase() === email);
+    if (hit) return hit;
+    if (users.length < 200) return null;
+  }
+  return null;
+}
+
 
 /* ================= "Paid ₹199" / "Paid ₹4999" tabs ================= */
 
