@@ -956,10 +956,15 @@ function syncPaidTabs_() {
   const pay = ss.getSheetByName(PAYMENTS_SHEET);
   const rows = pay && pay.getLastRow() > 1
     ? pay.getRange(2, 1, pay.getLastRow() - 1, PAYMENT_HEADERS.length).getValues() : [];
+  // While Testing is ON, ₹1 test payments (made on the ₹199 link) are listed in the ₹199 tab too.
+  // Turn Testing OFF and they drop out, leaving only real ₹199 buyers.
+  let testingOn = false;
+  try { testingOn = String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) {}
   PAID_TABS.forEach(tab => {
     const byEmail = {};
     rows.forEach(r => {
       if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured' || planForRow_(r) !== tab.plan) return;
+      if (!testingOn && Number(r[2]) === TEST_AMOUNT_PAISE / 100) return;   // ₹1 tests only while Testing is ON
       const email = String(r[COL.email - 1] || '').trim().toLowerCase();
       const key = email || String(r[COL.phone - 1] || '');
       if (!key) return;
