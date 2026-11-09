@@ -8,7 +8,7 @@
 /* If Razorpay sent the buyer to a test copy of this page (e.g. raw.githack.com),
    forward them straight to the live site, keeping the payment ID in the URL. */
 (function(){
-  var LIVE = 'https://tic-ai-workshop.vercel.app/success.html';
+  var LIVE = 'https://sntg-ai-workshop.vercel.app/success.html';
   var h = location.hostname;
   if (/(^|\.)githack\.com$|(^|\.)rawgit\.com$|(^|\.)github(usercontent)?\.(com|io)$/.test(h)) {
     location.replace(LIVE + location.search + location.hash);
