@@ -142,21 +142,61 @@ function checkRegistered_(email, phone) {
   const props = PropertiesService.getScriptProperties();
   const last = Number(props.getProperty(key) || 0);
   let resent = false;
-  if (buyer.email && Date.now() - last > 6 * HOUR && MailApp.getRemainingDailyQuota() >= 2) {
+  if (buyer.email && Date.now() - last > 6 * HOUR && MailApp.getRemainingDailyQuota() >= 1) {
     props.setProperty(key, String(Date.now()));
-    const start = workshopStart_(s);
-    sendStage_('welcome', buyer, s, start);                     // has the WhatsApp Community link
-    sendStage_('access', buyer, s, start);                      // website link + login
-    if (s.live) sendStage_('live', buyer, s, start);            // Zoom link, once it is in Settings
-    else MailApp.sendEmail({ to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
-      subject: '🔴 Your Zoom link — ' + WORKSHOP_NAME,
-      htmlBody: emailLayout_('<p>నమస్కారం ' + escape_(buyer.name) + ' గారు 🙏</p><p>You are already registered. ' +
-        'The Zoom link will be emailed to you on <b>' +
-        escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a")) +
-        ' IST</b>, one hour before we start.</p>') });
+    try { MailApp.sendEmail(alreadyRegisteredEmail_(buyer, match, s)); } catch (err) { console.error(err); }
     resent = true;
   }
   return { registered: true, resent: resent };
+}
+
+/**
+ * One email for someone who tries to register again (Testing OFF): you're already registered,
+ * the payment we already have, the workshop time, the Zoom link (or when it comes), the WhatsApp
+ * community and the website login.
+ */
+function alreadyRegisteredEmail_(buyer, row, s) {
+  const start = workshopStart_(s);
+  const name = String(buyer.name || '').trim();
+  const day = Number(Utilities.formatDate(start, 'Asia/Kolkata', 'd'));
+  const suffix = (day % 100 >= 11 && day % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th');
+  const when = Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE') + ', ' + day + suffix + ' ' +
+               Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' · ' +
+               Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
+  const paidAt = isDate_(row[0]) ? Utilities.formatDate(row[0], 'Asia/Kolkata', "d MMM yyyy, h:mm a") + ' IST' : '';
+  const btn = (url, label, color) => '<p style="margin:18px 0"><a href="' + escape_(url) +
+    '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
+    label + '</a></p>';
+  const zoom = s.live
+    ? '<p>🔴 <b>Zoom link / Live link:</b></p>' + btn(s.live, 'Join the live workshop / Live లో join అవ్వండి', '#004AAD') +
+      '<p style="color:#47576B;font-size:13px">' + escape_(s.live) + '</p>'
+    : '<p>🔴 <b>Zoom link</b> మీకు <b>' +
+      escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "d MMMM, h:mm a")) +
+      ' IST</b> కి (workshop కి 1 గంట ముందు) email లో వస్తుంది.<br>The Zoom link will be emailed to you on <b>' +
+      escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a")) +
+      ' IST</b>, one hour before we start.</p>';
+  const login = ACADEMY_URL + 'login?email=' + encodeURIComponent(String(buyer.email || '').trim()) +
+                '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD);
+  const html =
+    (name ? '<p>నమస్కారం <b>' + escape_(name) + '</b> గారు 🙏<br>Dear <b>' + escape_(name) + '</b>,</p>' : '<p>నమస్కారం 🙏</p>') +
+    '<p>✅ <b>మీరు ఇప్పటికే register అయ్యారు — మళ్ళీ pay చేయాల్సిన అవసరం లేదు.</b><br>' +
+    '<b>You are already registered — no need to pay again.</b></p>' +
+    '<div style="border:1px solid #DDE6F2;background:#F3F7FD;border-radius:12px;padding:14px 18px;margin:16px 0">' +
+      '<p style="margin:0 0 6px"><b>💳 మీ payment / Your payment</b></p>' +
+      '<p style="margin:0;font-size:14px">' +
+        'Amount: <b>₹' + escape_(String(row[2])) + '</b>' + (paidAt ? '<br>Paid on: <b>' + escape_(paidAt) + '</b>' : '') +
+        (row[1] ? '<br>Payment ID: <b>' + escape_(String(row[1])) + '</b>' : '') + '</p>' +
+    '</div>' +
+    '<p>📅 <b>' + escape_(when) + '</b><br>📱 Your phone is enough — no laptop needed.</p>' +
+    zoom +
+    '<p>Live updates కోసం WhatsApp community / Join the WhatsApp community:</p>' +
+    btn(s.community, 'Join the WhatsApp Community', '#25D366') +
+    '<p>🎁 <b>Bonus website:</b> login ID <b>' + escape_(buyer.email) + '</b> · password <code>' + ACADEMY_TEMP_PASSWORD +
+      '</code> (మీరు మార్చుకుంటే మీ password / or the one you set)</p>' +
+    btn(login, 'Log in to the website →', '#004AAD');
+  return { to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
+           subject: '✅ ' + (name ? name + ', y' : 'Y') + 'ou are already registered — ' + WORKSHOP_NAME,
+           htmlBody: emailLayout_(html) };
 }
 
 function doPost(e) {
