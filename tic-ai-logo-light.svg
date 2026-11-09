@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120" role="img" aria-label="TIC-AI — Telugu International Council of AI for Business">
+  <!-- Mark: rounded square with "AI" -->
+  <rect x="4" y="12" width="96" height="96" rx="22" fill="#004AAD"/>
+  <rect x="4" y="12" width="96" height="96" rx="22" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2B8AF0" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#004AAD" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <text x="52" y="77" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="800" fill="#FFFFFF">AI</text>
+  <circle cx="86" cy="26" r="7" fill="#F4C320"/>
+  <!-- Wordmark -->
+  <text x="122" y="70" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="800" fill="#FFFFFF" letter-spacing="-1">TIC<tspan fill="#2B8AF0">-AI</tspan></text>
+  <text x="124" y="100" font-family="Arial, Helvetica, sans-serif" font-size="17.5" font-weight="600" fill="#B8C6DA">Telugu International Council of AI for Business</text>
+</svg>
