@@ -723,7 +723,9 @@ function ensureAcademyAccount_(buyer, plan) {
   const email = String(buyer.email || '').trim().toLowerCase();
   if (!key) return { status: 'off', note: 'account not created (SUPABASE_SERVICE_KEY not set)' };
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { status: 'error', note: 'account ✗ no valid email' };
-  const headers = { apikey: key, Authorization: 'Bearer ' + key };
+  // The key goes in the apikey header only: that works for both the new sb_secret_… keys and
+  // the legacy service_role key (Supabase rejects an sb_secret_ key sent as a Bearer token).
+  const headers = { apikey: key };
   const fail = (code, body) => {
     let msg = body;
     try { const j = JSON.parse(body); msg = j.msg || j.message || j.error_description || j.error || body; } catch (e) {}

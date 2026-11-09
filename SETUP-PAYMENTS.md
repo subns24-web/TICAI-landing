@@ -177,8 +177,8 @@ project **xexcztrlcnqptlhjxqjg** (set as `SUPABASE_URL` in `Code.gs`):
 
 One setting is needed — the project's secret key, in Apps Script only:
 
-1. Supabase → project **xexcztrlcnqptlhjxqjg** → **Project Settings → API Keys** → copy the
-   **service_role** (secret) key.
+1. Supabase → project **xexcztrlcnqptlhjxqjg** → **Project Settings → API Keys** → under
+   **Secret keys**, copy the `sb_secret_…` key (or the legacy **service_role** key).
 2. Apps Script → ⚙ **Project Settings → Script properties** → add or edit
    `SUPABASE_SERVICE_KEY` = that key → Save. (Never put it in a website, a commit or a chat.)
    An old `SUPABASE_URL` property is no longer used and can be deleted.
