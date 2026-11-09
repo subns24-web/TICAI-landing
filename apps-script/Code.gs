@@ -31,12 +31,12 @@ const AMOUNT_PAISE  = 19900;   // ₹199 — only payments of exactly this amoun
 const TEST_AMOUNT_PAISE = 100; // ₹1 — also accepted while the Settings "Testing" switch is ON
 const COURSE_TEST_AMOUNT_PAISE = 200; // ₹2 — while Testing is ON, set the ₹4999 page to ₹2 for tests
 const COURSE_AMOUNT_PAISE = 499900;   // ₹4999 — academy + full course access
-// The ₹4999 course is paid on this Razorpay payment page (https://rzp.io/rzp/rA9h7TtB, title
-// "TIC-AI ACADEMY"). Every payment made there is a course payment, whatever the amount (₹1 while
-// testing). The ₹199 workshop page is a different one (https://rzp.io/rzp/fp4Jd12).
-const COURSE_PAGE_ID = 'pl_TwpcUqNiVEwwCH';
-const COURSE_PAGE_TITLE = 'TIC-AI ACADEMY';
-const COURSE_PAGE_MARK = '₹4999 course page';   // added to "Recorded via" for these payments
+// The ₹4999 course is paid on https://rzp.io/rzp/rA9h7TtB (Razorpay page pl_TwpcUqNiVEwwCH) and
+// the ₹199 workshop on https://rzp.io/rzp/fp4Jd12. Razorpay does not record which page a payment
+// came from, so the amount decides: ₹4999 = course (₹2 while Testing is ON — set the ₹4999 page to
+// ₹2 for tests, the ₹199 page to ₹1). To treat any other payment as a course payment, add
+// COURSE_PAGE_MARK to its "Recorded via" cell and clear its "Website access sent" cell.
+const COURSE_PAGE_MARK = '₹4999 course page';
 
 /** Payments the script records: ₹199 workshop (₹1 while testing) and ₹4999 course (₹2 while testing). */
 function isRecordedAmount_(paise) {
@@ -183,7 +183,7 @@ function onOpen() {
       .addItem('Send due messages now', 'runMessages')
       .addItem('Send the website-access test email to me', 'sendAccessTestToMe')
       .addItem('Create website logins for past buyers (no emails)', 'createAccountsForPastBuyers')
-      .addItem('Check which Razorpay page the last payments came from', 'checkPaymentPages')
+      .addItem('Check which package the last payments count as', 'checkPaymentPages')
       .addItem('Send all 5 test messages to me', 'sendTestToMe')
       .addItem('Resend already-sent emails to all buyers', 'resendToAllBuyers')
       .addItem('Send all 5 test messages to the latest form entry', 'sendTestToLatestLead')
@@ -265,24 +265,15 @@ function oneTimeUpdates_() {
   // Show every time in the sheet in India time (it was created on GMT).
   if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
 
-  // Payments made on the ₹4999 course page before this version were handled as workshop
-  // payments. Ask Razorpay once which page each recent payment came from; mark the course ones
-  // and clear their "Website access sent" cell so they get the course email and upgrade now.
-  if (!props.getProperty('DONE_COURSE_PAGE_V2') && hasKeys_()) {
-    props.setProperty('DONE_COURSE_PAGE_V2', new Date().toISOString());
+  // Course payments already handled as workshop payments (e.g. a ₹4999 paid before this
+  // version): clear their "Website access sent" cell once so they get the course email now.
+  if (!props.getProperty('DONE_COURSE_FLOW_V3')) {
+    props.setProperty('DONE_COURSE_FLOW_V3', new Date().toISOString());
     const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
     if (sh.getLastRow() >= 2) {
-      const weekAgo = Date.now() - 7 * 24 * HOUR;
       sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues().forEach((r, i) => {
-        if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured' || !/^pay_/.test(String(r[1]))) return;
-        if (planForRow_(r) !== 'course') {
-          if (!(isDate_(r[0]) && r[0].getTime() > weekAgo)) return;
-          let p = null;
-          try { p = razorpay_('/v1/payments/' + r[1]); } catch (e) { console.error(e); return; }
-          if (!isCoursePagePayment_(p)) return;
-          sh.getRange(i + 2, 9).setValue(String(r[8] || 'Razorpay') + ' · ' + COURSE_PAGE_MARK);
-        }
-        if (!/course email/.test(String(r[COL.access - 1]))) sh.getRange(i + 2, COL.access).setValue('');
+        if (String(r[COL.status - 1]).trim().toLowerCase() === 'captured' && planForRow_(r) === 'course' &&
+            !/course email/.test(String(r[COL.access - 1]))) sh.getRange(i + 2, COL.access).setValue('');
       });
     }
   }
@@ -802,17 +793,12 @@ function sendTestToLatestLead() {
   return out;
 }
 
-/** Menu helper: for the last 5 payments, shows whether each was made on the ₹4999 course page. */
+/** Menu helper: for the last 5 payments, shows which package each counts as. */
 function checkPaymentPages() {
   const res = razorpay_('/v1/payments?count=5');
-  const out = (res.items || []).map(p => {
-    let order = '';
-    if (p.order_id) { try { order = JSON.stringify(razorpay_('/v1/orders/' + p.order_id)); } catch (e) { order = e.message; } }
-    return p.id + ' · ₹' + p.amount / 100 + ' · ' + (p.email || '') + ' → ' +
-           (isCoursePagePayment_(p) ? '₹4999 COURSE page' : 'workshop page') +
-           '\n   description: ' + (p.description || '-') + '\n   order: ' + (order || '-').slice(0, 400);
-  });
-  const text = 'Course page = ' + COURSE_PAGE_ID + '\n\n' + out.join('\n\n');
+  const out = (res.items || []).map(p => p.id + ' · ₹' + p.amount / 100 + ' · ' + (p.email || '') + ' → ' +
+    (isCoursePagePayment_(p) ? '₹4999 COURSE' : 'workshop (₹199)'));
+  const text = '₹4999 = course (₹2 while Testing is ON); everything else = workshop.\n\n' + out.join('\n');
   console.log(text);
   try { SpreadsheetApp.getUi().alert(text); } catch (e) { /* run from the editor */ }
   return text;
@@ -825,32 +811,16 @@ function planForAmount_(rupees) {
   return Number(rupees) === COURSE_AMOUNT_PAISE / 100 ? 'course' : 'academy';
 }
 
-/** Plan for one Payments row: paid on the ₹4999 course page (or ₹4999) → 'course', else 'academy'. */
+/** Plan for one Payments row: ₹4999 (₹2 while testing) or marked "₹4999 course page" → 'course'. */
 function planForRow_(r) {
   if (Number(r[2]) === COURSE_AMOUNT_PAISE / 100) return 'course';
   if (Number(r[2]) === COURSE_TEST_AMOUNT_PAISE / 100 && isCourseTestAmount_(COURSE_TEST_AMOUNT_PAISE)) return 'course';
   return String(r[8] || '').indexOf(COURSE_PAGE_MARK) !== -1 ? 'course' : 'academy';
 }
 
-/**
- * True when a Razorpay payment was made on the ₹4999 course page (COURSE_PAGE_ID). Razorpay ties
- * a payment-page payment to the page through its order, so we look for the page in the payment
- * itself, then in its order; the page title in the description also counts.
- */
+/** True for a ₹4999 course payment: ₹4999, or ₹2 while Testing is ON. */
 function isCoursePagePayment_(p) {
-  if (!p) return false;
-  if (p.amount === COURSE_AMOUNT_PAISE || isCourseTestAmount_(p.amount)) return true;
-  const hasPage = o => JSON.stringify(o || {}).indexOf(COURSE_PAGE_ID) !== -1;
-  if (hasPage(p)) return true;
-  if (String(p.description || '').trim().toUpperCase() === COURSE_PAGE_TITLE) return true;
-  if (p.order_id && hasKeys_()) {
-    try {
-      const o = razorpay_('/v1/orders/' + p.order_id);
-      if (hasPage(o)) return true;
-      if (String(o.receipt || '').indexOf(COURSE_PAGE_ID) !== -1) return true;
-    } catch (e) { console.error('order lookup failed: ' + e.message); }
-  }
-  return false;
+  return !!p && (p.amount === COURSE_AMOUNT_PAISE || isCourseTestAmount_(p.amount));
 }
 
 /**
