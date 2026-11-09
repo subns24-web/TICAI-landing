@@ -251,6 +251,19 @@ function oneTimeUpdates_() {
   // Show every time in the sheet in India time (it was created on GMT).
   if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
 
+  // ₹4999 payments recorded before the course flow existed were treated as workshop payments:
+  // clear their "Website access sent" cell once so they get the course email and upgrade now.
+  if (!props.getProperty('DONE_COURSE_FLOW_V1')) {
+    props.setProperty('DONE_COURSE_FLOW_V1', new Date().toISOString());
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    if (sh.getLastRow() >= 2) {
+      sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues().forEach((r, i) => {
+        if (String(r[COL.status - 1]).trim().toLowerCase() === 'captured' && planForRow_(r) === 'course' &&
+            !/course email/.test(String(r[COL.access - 1]))) sh.getRange(i + 2, COL.access).setValue('');
+      });
+    }
+  }
+
   if (!props.getProperty('DONE_ACCESS_HEADER_V1')) {
     const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
     sh.getRange(1, COL.access).setValue(PAYMENT_HEADERS[COL.access - 1]);
@@ -422,6 +435,7 @@ function runMessages() {
       return e || ph;
     };
     const DUP = 'not sent — same person already received this';
+    const COURSE_SKIP = 'not sent — ₹4999 course payment (gets the course email instead)';
     const REFUNDED = 'not sent — payment no longer successful in Razorpay';
     const sentTo = {};   // stage key -> { buyerKey: true }
     STAGES.forEach(st => sentTo[st.key] = {});
@@ -470,13 +484,31 @@ function runMessages() {
         }
       }
 
+      // ₹4999 course payment: unlock the course and send the "payment received" email instead
+      // of the workshop emails. Stamped in "Website access sent"; workshop columns say why not.
+      if (planForRow_(r) === 'course') {
+        if (r[COL.access - 1] === '') {
+          if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
+          const acct = ensureAcademyAccount_(buyer, 'course');
+          const result = sendStage_('course', Object.assign({ newAccount: acct.status === 'created' }, buyer), s, start) +
+                         ' · ₹4999 course email · ' + acct.note;
+          sh.getRange(i + 2, COL.access).setValue(result);
+          r[COL.access - 1] = result;
+        }
+        STAGES.forEach(st => {
+          if (st.key !== 'access' && r[st.col - 1] === '') sh.getRange(i + 2, st.col).setValue(COURSE_SKIP);
+        });
+        if (allNow) props.setProperty('PREVIEW_' + pid, String(now));
+        continue;
+      }
+
       for (const st of due) {
         if (st.key === 'live' && !s.live && !allNow) { alertMissingLiveLink_(); continue; }
         const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
         const testing = String(s.testing).trim().toUpperCase() === 'ON';
         // Website login: create it (or upgrade ₹199 → ₹4999) before the access email goes out.
         // Runs even for a repeat buyer, so a later ₹4999 payment still upgrades the account.
-        const acctNote = st.key === 'access' ? ' · ' + ensureAcademyAccount_(buyer, planForAmount_(r[2])).note : '';
+        const acctNote = st.key === 'access' ? ' · ' + ensureAcademyAccount_(buyer, planForRow_(r)).note : '';
         if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP + acctNote); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
         // Testing preview of a later email (sent early): don't stamp it, so the real one still
@@ -586,6 +618,38 @@ function message_(key, b, s, start) {
             '</div>',
       waTemplate: null, waParams: []
     };
+    case 'course': {
+      const loginUrl = ACADEMY_URL + 'login?email=' + encodeURIComponent(String(b.email || '').trim()) +
+                       '&next=' + encodeURIComponent('/courses') +
+                       (b.newAccount ? '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD) : '');
+      return {
+        subject: '🎉 ' + (fullName ? fullName + ', ' : '') + 'your ₹4999 payment is received — your AI transformation starts now',
+        html: hi + '<p><b>Congratulations! Your ₹4999 payment is received</b> and your <b>full TIC AI course access is unlocked</b>. 🎉<br>' +
+              'మీ ₹4999 payment అందింది — మీ <b>పూర్తి TIC AI course access unlock అయింది</b>. 🎉</p>' +
+              '<p style="font-size:17px;margin:18px 0"><b>🚀 Unlock the potential of your business with AI — your transformation starts now.</b><br>' +
+              'AI తో మీ business సామర్థ్యాన్ని పూర్తిగా వెలికితీయండి — మీ transformation ఇప్పుడే మొదలవుతుంది.</p>' +
+              '<p>All courses, lessons, templates and workflows on TIC AI Academy are now open for you.<br>' +
+              'TIC AI Academy లోని అన్ని courses, lessons, templates, workflows ఇప్పుడు మీకు open.</p>' +
+              button(loginUrl, 'Open my ₹4999 course package →', '#004AAD') +
+              '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
+                '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
+                '<p style="margin:0">Website: <a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a><br>' +
+                'Login ID: <b>' + escape_(b.email) + '</b><br>' +
+                (b.newAccount
+                  ? 'Password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code>'
+                  : 'Password: your current password (forgot it? tap "Forgot password?" on the login page)') +
+                '</p>' +
+              '</div>' +
+              '<p style="font-size:13px;color:#47576B">Already logged in? Tap <b>My account → "I\'ve paid — refresh my access"</b>, or log out and in again.<br>' +
+              'ఇప్పటికే login అయి ఉంటే, <b>My account → "I\'ve paid — refresh my access"</b> నొక్కండి.</p>' +
+              '<div style="border-top:1px solid #eee;margin-top:22px;padding-top:16px">' +
+                '<p style="margin:0"><b>📱 TIC AI app ని మీ phone లో install చేసుకోండి</b><br>' +
+                'Install the TIC AI app on your phone — open your courses straight from the home screen.</p>' +
+                button(ACADEMY_APP_URL, '📱 Install the TIC AI app / App install చేయండి', '#B8892A') +
+              '</div>',
+        waTemplate: null, waParams: []
+      };
+    }
     case 'reminder': return {
       subject: '⏰ ' + who + 'your workshop is tomorrow — ' + WORKSHOP_NAME,
       html: hi + '<p>A quick reminder — your workshop is <b>tomorrow</b>.</p>' +
@@ -722,6 +786,20 @@ function planForAmount_(rupees) {
 }
 
 /**
+ * Plan for one Payments row: ₹4999 → 'course', ₹199 → 'academy'. A ₹1 test payment (Testing ON)
+ * is told apart by the Razorpay page it came from: the ₹4999 course page sends the buyer's
+ * number as notes.phone, the ₹199 workshop page as notes.whatsapp_number.
+ */
+function planForRow_(r) {
+  const rupees = Number(r[2]);
+  if (rupees === COURSE_AMOUNT_PAISE / 100) return 'course';
+  if (rupees === AMOUNT_PAISE / 100) return 'academy';
+  let notes = {};
+  try { notes = JSON.parse(String(r[9] || '{}')) || {}; } catch (e) {}
+  return (notes.phone && !notes.whatsapp_number) ? 'course' : 'academy';
+}
+
+/**
  * Makes sure the buyer has a website login. New account: password ACADEMY_TEMP_PASSWORD, email
  * already confirmed, plan in app_metadata.plan (students cannot change it). Existing account:
  * password left alone; plan only ever goes up (academy → course).
@@ -796,7 +874,7 @@ function createAccountsForPastBuyers() {
       if (!email) return;
       const p = people[email] || (people[email] = { buyer: { name: String(r[COL.name - 1] || ''), email: email,
                                     phone: String(r[COL.phone - 1] || '') }, plan: 'academy', rows: [], done: false });
-      if (planForAmount_(r[2]) === 'course') p.plan = 'course';
+      if (planForRow_(r) === 'course') p.plan = 'course';
       const cell = String(r[COL.access - 1] || '');
       if (/account (created|upgraded|already existed)/.test(cell)) p.done = true;
       else p.rows.push(i + 2);
@@ -840,9 +918,11 @@ function findAcademyUser_(headers, email) {
 
 /* ================= "Paid ₹199" / "Paid ₹4999" tabs ================= */
 
+// One tab per package. A row's package comes from planForRow_ (amount, or for a ₹1 test the
+// Razorpay page it was paid on), so test payments show up in the right tab while Testing is ON.
 const PAID_TABS = [
-  { name: 'Paid ₹199', rupees: 199 },
-  { name: 'Paid ₹4999', rupees: 4999 }
+  { name: 'Paid ₹199', plan: 'academy' },
+  { name: 'Paid ₹4999', plan: 'course' }
 ];
 const PAID_TAB_HEADERS = ['Email', 'Name', 'WhatsApp / Phone', 'Last paid at', 'Payments', 'Latest payment ID', 'Website access sent'];
 
@@ -855,7 +935,7 @@ function syncPaidTabs_() {
   PAID_TABS.forEach(tab => {
     const byEmail = {};
     rows.forEach(r => {
-      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured' || Number(r[2]) !== tab.rupees) return;
+      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured' || planForRow_(r) !== tab.plan) return;
       const email = String(r[COL.email - 1] || '').trim().toLowerCase();
       const key = email || String(r[COL.phone - 1] || '');
       if (!key) return;
