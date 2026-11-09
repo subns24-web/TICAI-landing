@@ -167,6 +167,7 @@ function onOpen() {
     SpreadsheetApp.getUi().createMenu('TIC-AI')
       .addItem('Send due messages now', 'runMessages')
       .addItem('Send the website-access test email to me', 'sendAccessTestToMe')
+      .addItem('Create website logins for past buyers (no emails)', 'createAccountsForPastBuyers')
       .addItem('Send all 5 test messages to me', 'sendTestToMe')
       .addItem('Resend already-sent emails to all buyers', 'resendToAllBuyers')
       .addItem('Send all 5 test messages to the latest form entry', 'sendTestToLatestLead')
@@ -758,6 +759,58 @@ function ensureAcademyAccount_(buyer, plan) {
   } catch (e) {
     console.error(e);
     return { status: 'error', note: 'account ✗ ' + String(e.message).slice(0, 80) };
+  }
+}
+
+/**
+ * One-off: gives every buyer already in Payments a website login (password ACADEMY_TEMP_PASSWORD,
+ * plan from their highest payment). Sends NO emails. Safe to run again: rows whose
+ * "Website access sent" cell already mentions an account are skipped, and existing accounts
+ * keep their password. Run from the TIC-AI menu or the editor.
+ */
+function createAccountsForPastBuyers() {
+  if (!PropertiesService.getScriptProperties().getProperty('SUPABASE_SERVICE_KEY')) {
+    const msg = 'Add Script property SUPABASE_SERVICE_KEY first (Project Settings → Script properties).';
+    console.log(msg);
+    return msg;
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    if (sh.getLastRow() < 2) return 'No payments yet.';
+    const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+    const people = {};   // email -> { buyer, plan, rows: [row numbers needing a stamp] }
+    rows.forEach((r, i) => {
+      if (String(r[COL.status - 1]).trim().toLowerCase() !== 'captured') return;
+      const email = String(r[COL.email - 1] || '').trim().toLowerCase();
+      if (!email) return;
+      const p = people[email] || (people[email] = { buyer: { name: String(r[COL.name - 1] || ''), email: email,
+                                    phone: String(r[COL.phone - 1] || '') }, plan: 'academy', rows: [], done: false });
+      if (planForAmount_(r[2]) === 'course') p.plan = 'course';
+      const cell = String(r[COL.access - 1] || '');
+      if (/account (created|upgraded|already existed)/.test(cell)) p.done = true;
+      else p.rows.push(i + 2);
+    });
+    const out = [];
+    Object.keys(people).forEach(email => {
+      const p = people[email];
+      if (p.done && p.plan !== 'course') { out.push(email + ': skipped (account already handled)'); return; }
+      if (!p.rows.length) { out.push(email + ': skipped'); return; }
+      const res = ensureAcademyAccount_(p.buyer, p.plan);
+      p.rows.forEach(rn => {
+        const cell = sh.getRange(rn, COL.access);
+        const prev = String(cell.getValue() || '');
+        cell.setValue((prev ? prev + ' · ' : '') + res.note + ' (past buyer, no email)');
+      });
+      out.push(email + ': ' + res.note);
+    });
+    const summary = 'Website logins for past buyers (no emails sent):\n' + out.join('\n');
+    console.log(summary);
+    try { SpreadsheetApp.getUi().alert(summary); } catch (e) { /* run from the editor */ }
+    return summary;
+  } finally {
+    lock.releaseLock();
   }
 }
 
