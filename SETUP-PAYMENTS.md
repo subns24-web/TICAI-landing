@@ -161,30 +161,30 @@ Apps Script → ⚙ **Project Settings → Script properties**:
 Then run **`sendTestToMe`**. You should get 4 emails and 4 WhatsApp messages. If a stamp says
 `WA ✗ …`, the text after it is Meta's reason (usually "template not approved yet" or a token problem).
 
-## Step 8 — TIC AI Academy login for buyers
+## Step 8 — Website login for buyers (TIC AI Academy)
 
-**Plans:** ₹199 (workshop) → academy access; ₹4999 → academy **and** the full course
-(lessons). The plan is stored in Supabase `app_metadata.plan` (`academy` / `course`), which only
-this script can set. A ₹199 student who later pays ₹4999 is upgraded and emailed "your course access
-is unlocked". ₹4999 buyers also get the workshop emails. The sheet keeps **Paid ₹199** and
-**Paid ₹4999** tabs (one row per email), rebuilt every 5 minutes from Payments.
+Every buyer Razorpay confirms gets a login on https://tic-ai-academy.vercel.app in the Supabase
+project **xexcztrlcnqptlhjxqjg** (set as `SUPABASE_URL` in `Code.gs`):
 
-Every buyer Razorpay confirms gets a **TIC AI Academy** account (https://tic-ai-academy.vercel.app)
-with their registered email and a starting password like `TIC-4827-Kmqp`. The login details go
-**inside the welcome email**; buyers who already had their welcome email get a separate
-"🎓 your TIC AI Academy login" email once. One account per email; an existing account is never
-changed. The **Academy account** column in Payments shows what happened (clear a cell to retry).
+- **Login ID:** their registered email. **Password:** `ticai2026` (they can change it under My account).
+- The "🎁 free access to our website" email carries these details; its button opens the login
+  page with both filled in.
+- **Plans:** ₹199 → `academy`, ₹4999 → `course` (stored in `app_metadata.plan`, which students
+  cannot change). A ₹199 student who later pays ₹4999 is upgraded automatically.
+- An existing account keeps its password; its plan only ever goes up.
+- The **Website access sent** column in Payments shows the email result and what happened to the
+  account (`account created (academy)`, `account upgraded to course`, `account ✗ …`).
 
-1. Create a Supabase project for the academy (supabase.com → New project).
-2. Supabase → **Authentication → Sign In / Providers → Email**: turn **off** "Allow new users to sign up".
-3. Supabase → **Authentication → URL Configuration**: Site URL `https://tic-ai-academy.vercel.app`,
-   Redirect URLs: add `https://tic-ai-academy.vercel.app/account`.
-4. Supabase → **Project Settings → API**: copy the Project URL, the `anon` public key and the
-   `service_role` secret key.
-5. Apps Script → ⚙ Project Settings → Script properties: `SUPABASE_URL` = Project URL,
-   `SUPABASE_SERVICE_KEY` = the **service_role** key. (Secret: only here, never in a website or chat.)
-6. Vercel → the academy project → Settings → Environment Variables: `NEXT_PUBLIC_SUPABASE_URL` =
-   Project URL, `NEXT_PUBLIC_SUPABASE_ANON_KEY` = the **anon** key. Redeploy.
+One setting is needed — the project's secret key, in Apps Script only:
+
+1. Supabase → project **xexcztrlcnqptlhjxqjg** → **Project Settings → API Keys** → copy the
+   **service_role** (secret) key.
+2. Apps Script → ⚙ **Project Settings → Script properties** → add or edit
+   `SUPABASE_SERVICE_KEY` = that key → Save. (Never put it in a website, a commit or a chat.)
+   An old `SUPABASE_URL` property is no longer used and can be deleted.
+
+Until the key is set, buyers still get the email and the column says
+`account not created (SUPABASE_SERVICE_KEY not set)`.
 
 ## Settings in `Code.gs`
 
