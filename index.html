@@ -1199,7 +1199,7 @@ const AUTO_HOUR = 10;  // 10 AM
    night before the workshop (23:59), i.e. when registration actually closes.
    Keep it a REAL deadline — a timer that resets while the price never moves
    is a false claim, and this audience checks.                               */
-const OFFER_ENDS = "2026-11-15T22:00:00+05:30";   // 24-hour offer: ends Sun 15 Nov, 10:00 PM IST
+const OFFER_ENDS = "";   // unused: the top-bar timer counts down to midnight IST and restarts every day
 
 function workshopAt(){
   if(WORKSHOP_DATE) return new Date(WORKSHOP_DATE);
@@ -1263,9 +1263,10 @@ const OFFER_DEADLINE = (function(){
 (function(){
   const el = document.getElementById('clock');
   function tick(){
-    let s = Math.max(0, Math.floor((OFFER_DEADLINE - Date.now())/1000));
-    // Offer over: hide the bar instead of showing "ends in 00:00:00".
-    if(s === 0){ const bar = el.closest('.urgency'); if(bar) bar.hidden = true; return; }
+    // Daily 24-hour timer: counts down to the next midnight in India (IST), then starts again.
+    const IST = 330 * 60000, DAY = 86400000;
+    const nextMidnight = Math.floor((Date.now() + IST) / DAY) * DAY + DAY - IST;
+    let s = Math.max(0, Math.floor((nextMidnight - Date.now())/1000));
     const d = Math.floor(s/86400); s -= d*86400;
     const h = String(Math.floor(s/3600)).padStart(2,'0');
     const m = String(Math.floor(s%3600/60)).padStart(2,'0');
