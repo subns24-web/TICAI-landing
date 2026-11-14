@@ -8,11 +8,11 @@ actively looking for signs the page is fake.
 Do not write them yourself. Published reviews that aren't from real customers are
 prohibited under **BIS IS 19000:2022** and the CCPA online-review guidelines, and count
 as an unfair trade practice under the Consumer Protection Act 2019. For a trainer selling
-under his own name, that's not a risk worth ₹199 conversions.
+under his own name, that's not a risk worth ₹99 conversions.
 
 ## The fastest honest route
 
-Run the first batch **free or at ₹199 for 20 people you can reach directly**. You only need
+Run the first batch **free or at ₹99 for 20 people you can reach directly**. You only need
 three good reviews. Collect them the same day — recall drops fast after 48 hours.
 
 ## WhatsApp message to send 2 hours after the workshop
