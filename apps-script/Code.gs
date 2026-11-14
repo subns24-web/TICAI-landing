@@ -1,12 +1,12 @@
 /**
- * SNTG ₹199 workshop — Google Sheet + payment checks + buyer messaging.
+ * TIC-AI ₹99 workshop — Google Sheet + payment checks + buyer messaging.
  *
  * Paste this into the Apps Script editor (Sheet → Extensions → Apps Script, or
  * script.google.com). Steps: SETUP-PAYMENTS.md
  *
  * Tabs it manages in the "SNTG Workshop Registrations" sheet:
  *  - Leads     every landing-page form submit (name, WhatsApp, email, business)
- *  - Payments  every ₹199 payment CONFIRMED BY RAZORPAY + when each message was sent
+ *  - Payments  every ₹99 payment CONFIRMED BY RAZORPAY + when each message was sent
  *  - Settings  workshop date, live link, community link, feedback link, ON/OFF switch
  *
  * Messages to each paid buyer (email always; WhatsApp once Meta Cloud API is set up):
@@ -27,18 +27,19 @@
 const SHEET_ID = '1CpZI9srdFq_H44pJv5SK3QQb0XymaVMFGnKNnRvvlUg';
 
 const OWNER_EMAIL   = 'subns24@gmail.com';
-const AMOUNT_PAISE  = 19900;   // ₹199 — only payments of exactly this amount are recorded
+const AMOUNT_PAISE  = 9900;    // ₹99 — the workshop price (revised from ₹199 on 14 Nov 2026)
+const OLD_AMOUNT_PAISE = 19900; // ₹199 — the earlier price; still counted, so earlier buyers stay registered
 const TEST_AMOUNT_PAISE = 100; // ₹1 — also accepted while the Settings "Testing" switch is ON
 const COURSE_TEST_AMOUNT_PAISE = 200; // ₹2 — while Testing is ON, set the ₹4999 page to ₹2 for tests
 const COURSE_AMOUNT_PAISE = 499900;   // ₹4999 — academy + full course access
 // The ₹4999 course is paid on https://rzp.io/rzp/rA9h7TtB (Razorpay page pl_TwpcUqNiVEwwCH) and
-// the ₹199 workshop on https://rzp.io/rzp/fp4Jd12. Razorpay does not record which page a payment
+// the ₹99 workshop on https://rzp.io/rzp/fp4Jd12. Razorpay does not record which page a payment
 // came from, so the amount decides: ₹4999 = course (₹2 while Testing is ON — set the ₹4999 page to
-// ₹2 for tests, the ₹199 page to ₹1). To treat any other payment as a course payment, add
+// ₹2 for tests, the ₹99 page to ₹1). To treat any other payment as a course payment, add
 // COURSE_PAGE_MARK to its "Recorded via" cell and clear its "Website access sent" cell.
 const COURSE_PAGE_MARK = '₹4999 course page';
 
-/** Payments the script records: ₹199 workshop (₹1 while testing) and ₹4999 course (₹2 while testing). */
+/** Payments the script records: ₹99 workshop (₹199 before the price change) (₹1 while testing) and ₹4999 course (₹2 while testing). */
 function isRecordedAmount_(paise) {
   return paise === COURSE_AMOUNT_PAISE || isCourseTestAmount_(paise) || isWorkshopAmount_(paise);
 }
@@ -49,9 +50,9 @@ function isCourseTestAmount_(paise) {
   try { return String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) { return false; }
 }
 
-/** ₹199, or ₹1 while testing. */
+/** ₹99 (or the earlier ₹199), or ₹1 while testing. */
 function isWorkshopAmount_(paise) {
-  if (paise === AMOUNT_PAISE) return true;
+  if (paise === AMOUNT_PAISE || paise === OLD_AMOUNT_PAISE) return true;
   if (paise !== TEST_AMOUNT_PAISE) return false;
   try { return String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) { return false; }
 }
@@ -318,6 +319,13 @@ function oneTimeUpdates_() {
     }
   }
 
+  // Price change ₹199 → ₹99: rename the "Paid ₹199" tab once (it is rebuilt every 5 minutes anyway).
+  if (!props.getProperty('DONE_PAID_99_TAB_V1')) {
+    const old = ss_().getSheetByName('Paid ₹199');
+    if (old && !ss_().getSheetByName('Paid ₹99')) old.setName('Paid ₹99');
+    props.setProperty('DONE_PAID_99_TAB_V1', new Date().toISOString());
+  }
+
   if (!props.getProperty('DONE_ACCESS_HEADER_V1')) {
     const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
     sh.getRange(1, COL.access).setValue(PAYMENT_HEADERS[COL.access - 1]);
@@ -419,7 +427,7 @@ function alertMissingKeys_() {
 }
 
 /**
- * Records one payment only if Razorpay confirms it is captured (successful) and for ₹199.
+ * Records one payment only if Razorpay confirms it is captured (successful) and for ₹99.
  * Nothing is recorded without the Razorpay API keys.
  */
 function recordPayment_(paymentId, payment, via, hint) {
@@ -434,7 +442,7 @@ function recordPayment_(paymentId, payment, via, hint) {
 
     if (!payment && !hasKeys_()) return;                 // can't confirm with Razorpay
     const p = payment || razorpay_('/v1/payments/' + paymentId);
-    if (p.status !== 'captured' || !isRecordedAmount_(p.amount)) return;   // only successful ₹199 / ₹4999 (₹1 while testing)
+    if (p.status !== 'captured' || !isRecordedAmount_(p.amount)) return;   // only successful ₹99 / ₹4999 (₹1 while testing)
 
     const notes = p.notes || {};
     let email = p.email || notes.email || (hint && hint.email) || '';
@@ -561,7 +569,7 @@ function runMessages() {
         if (st.key === 'live' && !s.live && !allNow) { alertMissingLiveLink_(); continue; }
         const k = buyerKey(r) || buyerKey([0, 0, 0, 0, buyer.email, buyer.phone]);
         const testing = String(s.testing).trim().toUpperCase() === 'ON';
-        // Website login: create it (or upgrade ₹199 → ₹4999) before the access email goes out.
+        // Website login: create it (or upgrade ₹99 → ₹4999) before the access email goes out.
         // Runs even for a repeat buyer, so a later ₹4999 payment still upgrades the account.
         const acctNote = st.key === 'access' ? ' · ' + ensureAcademyAccount_(buyer, planForRow_(r)).note : '';
         if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP + acctNote); r[st.col - 1] = DUP; continue; }
@@ -837,7 +845,7 @@ function sendTestToLatestLead() {
 function checkPaymentPages() {
   const res = razorpay_('/v1/payments?count=5');
   const out = (res.items || []).map(p => p.id + ' · ₹' + p.amount / 100 + ' · ' + (p.email || '') + ' → ' +
-    (isCoursePagePayment_(p) ? '₹4999 COURSE' : 'workshop (₹199)'));
+    (isCoursePagePayment_(p) ? '₹4999 COURSE' : 'workshop (₹' + (p.amount / 100) + ')'));
   const text = '₹4999 = course (₹2 while Testing is ON); everything else = workshop.\n\n' + out.join('\n');
   console.log(text);
   try { SpreadsheetApp.getUi().alert(text); } catch (e) { /* run from the editor */ }
@@ -980,12 +988,12 @@ function findAcademyUser_(headers, email) {
 }
 
 
-/* ================= "Paid ₹199" / "Paid ₹4999" tabs ================= */
+/* ================= "Paid ₹99" / "Paid ₹4999" tabs ================= */
 
 // One tab per package. A row's package comes from planForRow_ (amount, or for a ₹1 test the
 // Razorpay page it was paid on), so test payments show up in the right tab while Testing is ON.
 const PAID_TABS = [
-  { name: 'Paid ₹199', plan: 'academy' },
+  { name: 'Paid ₹99', plan: 'academy' },
   { name: 'Paid ₹4999', plan: 'course' }
 ];
 const PAID_TAB_HEADERS = ['Email', 'Name', 'WhatsApp / Phone', 'Last paid at', 'Payments', 'Latest payment ID', 'Website access sent'];
@@ -996,8 +1004,8 @@ function syncPaidTabs_() {
   const pay = ss.getSheetByName(PAYMENTS_SHEET);
   const rows = pay && pay.getLastRow() > 1
     ? pay.getRange(2, 1, pay.getLastRow() - 1, PAYMENT_HEADERS.length).getValues() : [];
-  // While Testing is ON, ₹1 test payments (made on the ₹199 link) are listed in the ₹199 tab too.
-  // Turn Testing OFF and they drop out, leaving only real ₹199 buyers.
+  // While Testing is ON, ₹1 test payments (made on the ₹99 link) are listed in the ₹99 tab too.
+  // Turn Testing OFF and they drop out, leaving only real buyers.
   let testingOn = false;
   try { testingOn = String(settings_().testing).trim().toUpperCase() === 'ON'; } catch (e) {}
   PAID_TABS.forEach(tab => {
@@ -1233,7 +1241,7 @@ function checkSetup() {
       const res = razorpay_('/v1/payments?count=100&from=' + (Math.floor(Date.now() / 1000) - 7 * 24 * 3600));
       const items = res.items || [];
       const good = items.filter(p => p.status === 'captured' && isRecordedAmount_(p.amount));
-      ok(true, 'Razorpay connection works. Last 7 days: ' + items.length + ' payments, ' + good.length + ' successful ₹199');
+      ok(true, 'Razorpay connection works. Last 7 days: ' + items.length + ' payments, ' + good.length + ' successful ₹99 / ₹199');
       good.slice(0, 10).forEach(p => lines.push('     • ' + p.id + '  ' + (p.email || '') + '  ' + (p.contact || '') + '  ' +
         Utilities.formatDate(new Date(p.created_at * 1000), 'Asia/Kolkata', 'dd MMM HH:mm') + ' IST'));
     } catch (e) {

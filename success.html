@@ -161,7 +161,7 @@ if(lead.email){
 
 if(!/X/i.test(WHATSAPP_NUMBER)){
   const wa = document.getElementById('wa');
-  const msg = `Hi 🙏 I paid for the ₹199 AI Workshop.${paymentId ? '\nPayment ID: ' + paymentId : ''}`;
+  const msg = `Hi 🙏 I paid for the ₹99 AI Workshop.${paymentId ? '\nPayment ID: ' + paymentId : ''}`;
   wa.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
   wa.hidden = false;
 }

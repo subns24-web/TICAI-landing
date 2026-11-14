@@ -1,9 +1,9 @@
-# SNTG — ₹199 MSME AI Workshop Landing Page (Telugu)
+# SNTG — ₹99 MSME AI Workshop Landing Page (Telugu)
 
 Single-file landing page. Be10x funnel architecture, rewritten for Telugu MSME owners.
 Open `index.html` locally. Deploy with `vercel` — no build step, no config.
 
-**Offer:** ₹199 (from ₹1,999) · live 3-hour Telugu workshop · fixed date + time
+**Offer:** ₹99 (from ₹1,999) · live 3-hour Telugu workshop · fixed date + time
 **Promise:** save ~₹20,000/month by not hiring the assistant you were about to hire
 
 ## Before you run ads — 4 things to replace
@@ -14,14 +14,14 @@ Open `index.html` locally. Deploy with `vercel` — no build step, no config.
    ```
    Also the footer `https://wa.me/91XXXXXXXXXX` link.
 
-2. **Payment link + Google Sheet** — see `SETUP-PAYMENTS.md`. Current ₹199 page:
+2. **Payment link + Google Sheet** — see `SETUP-PAYMENTS.md`. Current ₹99 page:
    ```js
    const PAYMENT_LINK = "https://rzp.io/rzp/fp4Jd12";
    ```
    With it set, the lead lands on your WhatsApp *and* the user goes straight to pay.
 
 3. **Testimonials** — three cards marked `[...]`. Replace with real attendee quotes,
-   or **delete the whole section**. Fake testimonials are what kill a ₹199 offer.
+   or **delete the whole section**. Fake testimonials are what kill a ₹99 offer.
 
 4. **Your photo** — the trainer block has an empty `.f-photo`:
    ```html
@@ -106,7 +106,7 @@ also converts better with this audience.
 
 ## Copy strategy
 
-Be10x sells a ₹9 impulse workshop; ₹199 filters out no-shows far better while staying
+Be10x sells a ₹9 impulse workshop; ₹99 filters out no-shows far better while staying
 an impulse decision. Everything else carries over: urgency bar → specific pain →
 proof of mechanism (the ₹21,000 table) → curriculum → value stack → who it's NOT for
 → objection FAQ → sticky CTA.
