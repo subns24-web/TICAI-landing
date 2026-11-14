@@ -5,7 +5,7 @@ How it works:
 ```
 Landing form (name, WhatsApp, email)
    ├─► Google Sheet "Leads" tab           (everyone who clicked Pay)
-   └─► Razorpay ₹199 page  https://rzp.io/rzp/fp4Jd12
+   └─► Razorpay ₹99 page  https://rzp.io/rzp/fp4Jd12
           └─ paid ─► success.html
                        └─► Google Sheet "Payments" tab  (checked with Razorpay first)
                              └─► email to subns24@gmail.com
@@ -68,7 +68,7 @@ and on its first run it picks up successful payments from the last 7 days.
 
 ## Step 5 — Send buyers to the success page after paying
 
-Razorpay Dashboard → **Payment Pages** → open the ₹199 page → **Edit** →
+Razorpay Dashboard → **Payment Pages** → open the ₹99 page → **Edit** →
 **Page settings / After payment** → **Redirect to your website** → enter:
 
 ```
@@ -83,9 +83,9 @@ Also in the page editor, make sure **Email** and **Phone** are required fields
 
 ## Step 6 — Test
 
-1. Open the landing page, fill the form, click **Pay ₹199**.
+1. Open the landing page, fill the form, click **Pay ₹99**.
 2. Check the **Leads** tab — a new row appears within seconds.
-3. Pay ₹199 (you can refund yourself afterwards from the Razorpay dashboard).
+3. Pay ₹99 (you can refund yourself afterwards from the Razorpay dashboard).
 4. You land on the success page → a **Payments** row appears and an email arrives at subns24@gmail.com.
    If you close the browser instead, the row and email arrive within 5 minutes.
 
@@ -113,7 +113,7 @@ four "…sent" columns to **Payments**, and one 5-minute timer that does everyth
 | Send messages to buyers (ON / OFF) | `OFF` pauses everything |
 
 **Rules**
-- Only payments Razorpay confirms as successful (Status `captured`, ₹199) are added and get messages.
+- Only payments Razorpay confirms as successful (Status `captured`, ₹99) are added and get messages.
 - Each send is stamped in the row, e.g. `22 Nov 09:05 · Email ✓ · WA ✓`. **Clear the cell to resend.**
 - **Test first:** run `sendTestToMe` (or menu **SNTG → Send all 4 test messages to me**) — all four
   messages go to subns24@gmail.com and your WhatsApp from Settings; the sheet isn't changed.
@@ -169,8 +169,8 @@ project **xexcztrlcnqptlhjxqjg** (set as `SUPABASE_URL` in `Code.gs`):
 - **Login ID:** their registered email. **Password:** `ticai2026` (they can change it under My account).
 - The "🎁 free access to our website" email carries these details; its button opens the login
   page with both filled in.
-- **Plans:** ₹199 → `academy`, ₹4999 → `course` (stored in `app_metadata.plan`, which students
-  cannot change). A ₹199 student who later pays ₹4999 is upgraded automatically.
+- **Plans:** ₹99 → `academy`, ₹4999 → `course` (stored in `app_metadata.plan`, which students
+  cannot change). A ₹99 student who later pays ₹4999 is upgraded automatically.
 - An existing account keeps its password; its plan only ever goes up.
 - The **Website access sent** column in Payments shows the email result and what happened to the
   account (`account created (academy)`, `account upgraded to course`, `account ✗ …`).
@@ -191,7 +191,7 @@ Until the key is set, buyers still get the email and the column says
 | Setting | Default | Meaning |
 |---|---|---|
 | `OWNER_EMAIL` | `subns24@gmail.com` | Who gets the "new payment" and "add live link" emails; reply-to on buyer emails |
-| `AMOUNT_PAISE` | `19900` | Only ₹199 payments are recorded. Change if the price changes |
+| `AMOUNT_PAISE` | `9900` | ₹99 payments are recorded (earlier ₹199 payments, `OLD_AMOUNT_PAISE`, still count). Change if the price changes |
 | `WORKSHOP_HOURS` | `2` | Workshop length (10 AM – 12 PM) — the thank-you goes 30 min after it ends |
 
 Gmail limit for scripts: **about 100 emails/day** on a free Google account (1,500 on Google Workspace).
