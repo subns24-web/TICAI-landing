@@ -195,9 +195,7 @@ function alreadyRegisteredEmail_(buyer, row, s) {
     zoom +
     '<p>If you haven\'t yet, join our WhatsApp community for updates:</p>' +
     btn(s.community, 'Join the WhatsApp community', '#25D366') +
-    '<p>Your complimentary TIC AI Academy login: <b>' + escape_(buyer.email) + '</b>, password <code>' + ACADEMY_TEMP_PASSWORD +
-      '</code> (or the one you set yourself).</p>' +
-    btn(login, 'Log in to TIC AI Academy', '#004AAD');
+    '';
   return { to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
            subject: (first ? first + ', you\'re' : 'You\'re') + ' already registered. See you on ' + Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE'),
            htmlBody: emailLayout_(html) };
@@ -681,11 +679,6 @@ function message_(key, b, s, start) {
       html: hi +
             '<p>As a workshop participant, you get <b>complimentary access to TIC AI Academy</b>, our learning website.<br>' +
             'Workshop లో join అయినందుకు, మా learning website <b>TIC AI Academy</b> కి మీకు complimentary access ఇస్తున్నాం.</p>' +
-            '<p>Tap the button below. Your email and password are already filled in, so you only need to tap "Log in".</p>' +
-            // Opens the login page with the email and password already filled in (password in the
-            // #fragment, which is never sent to the server).
-            button(ACADEMY_URL + 'login?email=' + encodeURIComponent(String(b.email || '').trim()) +
-                   '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD), 'Log in to TIC AI Academy', '#004AAD') +
             loginBox('Temporary password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code>') +
             '<p>Once you\'re in, you can set your own password from "My account".<br>' +
             'Login అయిన తర్వాత "My account" లో మీ సొంత password పెట్టుకోవచ్చు.</p>' +
@@ -704,7 +697,6 @@ function message_(key, b, s, start) {
               'మీ ₹4999 payment అందింది. మీ <b>పూర్తి TIC AI course</b> ఇప్పుడు open అయింది.</p>' +
               '<p>Every course, lesson, template and workflow on TIC AI Academy is now open to you. Take it one lesson at a time, and try each idea in your own business as you go.<br>' +
               'TIC AI Academy లోని అన్ని courses, lessons, templates, workflows మీకు open. ఒక్కో lesson చేసి, మీ business లో try చేయండి.</p>' +
-              button(loginUrl, 'Open my course', '#004AAD') +
               loginBox(b.newAccount
                 ? 'Password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code>'
                 : 'Password: your current password (forgot it? tap "Forgot password?" on the login page)') +
@@ -739,10 +731,10 @@ function message_(key, b, s, start) {
     case 'thanks': return {
       subject: 'Thank you for coming' + (fullName ? ', ' + first : ''),
       html: hi +
-            '<p>Thank you for spending your morning with us. We hope you\'re already trying a few of the things we did today in your business.<br>' +
-            'మాతో ఈ సమయం గడిపినందుకు ధన్యవాదాలు. ఈరోజు నేర్చుకున్నవి మీ business లో try చేయడం మొదలుపెట్టారని ఆశిస్తున్నాం.</p>' +
-            (s.feedback ? '<p>We\'d love to hear what you thought. Please share your feedback, and pick up your bonus files here:</p>' +
-                          button(s.feedback, 'Share feedback and get your files', '#004AAD') : '') +
+            '<p>Thank you for spending your morning with us. <b>We are proud of you</b> for joining the call, learning, and practicing techniques you can now use in your own business.<br>' +
+            'మాతో ఈ సమయం గడిపినందుకు ధన్యవాదాలు. Call లో join అయి, నేర్చుకుని, మీ business లో వాడగలిగే techniques practice చేసినందుకు <b>మీ గురించి గర్వంగా ఉంది</b>.</p>' +
+            '<p>Start with one small task this week, and keep going from there.<br>' +
+            'ఈ వారం ఒక చిన్న పనితో మొదలుపెట్టండి.</p>' +
             '<p>Stay in the WhatsApp community. We keep sharing tips there, and it\'s a good place to ask when you get stuck.</p>' +
             button(s.community, 'WhatsApp community', '#25D366'),
       waTemplate: 'sntg_thank_you', waParams: [first, s.feedback || s.community]
@@ -752,7 +744,7 @@ function message_(key, b, s, start) {
 
 function emailLayout_(inner) {
   return '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#04101F;max-width:560px">' +
-         inner + '<p style="margin-top:26px">Warm regards,<br><b>Team TIC AI</b><br>' +
+         inner + '<p style="margin-top:26px">Regards,<br><b>Team TIC AI</b><br>' +
          '<span style="color:#47576B;font-size:13px">TIC-AI, Telugu International Council of AI for Business</span></p>' +
          '<p style="color:#7A8CA3;font-size:12px">Have a question? Just reply to this email. We read every reply.</p></div>';
 }
