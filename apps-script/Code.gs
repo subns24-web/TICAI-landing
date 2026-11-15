@@ -7,12 +7,12 @@
  * Tabs it manages in the "SNTG Workshop Registrations" sheet:
  *  - Leads     every landing-page form submit (name, WhatsApp, email, business)
  *  - Payments  every ₹99 payment CONFIRMED BY RAZORPAY + when each message was sent
- *  - Settings  workshop date, live link, community link, feedback link, ON/OFF switch
+ *  - Settings  workshop date, webinar link, community link, feedback link, ON/OFF switch
  *
  * Messages to each paid buyer (email always; WhatsApp once Meta Cloud API is set up):
  *  1. Welcome     as soon as Razorpay confirms the payment (registration confirmed)
  *  2. Reminder    the evening before (16 h before start)
- *  3. Live link   1 hour before start  (needs "Live link" filled in Settings)
+ *  3. Webinar link 1 hour before start  (needs "Webinar link" filled in Settings)
  *  4. Thank-you   30 min after the workshop ends (WORKSHOP_HOURS)
  * A timer runs every 5 minutes and sends whatever is due. Each send is stamped in the
  * buyer's row; clear that cell to send that message again.
@@ -66,7 +66,7 @@ const SETTINGS_SHEET = 'Settings';
 const LEAD_HEADERS    = ['Submitted at', 'Name', 'WhatsApp', 'Email', 'Business', 'Language', 'Page'];
 const PAYMENT_HEADERS = ['Paid at', 'Payment ID', 'Amount (₹)', 'Name', 'Email', 'WhatsApp / Phone',
                          'Method', 'Status', 'Recorded via', 'Razorpay notes',
-                         'Welcome sent', 'Reminder sent', 'Live link sent', 'Thank-you sent',
+                         'Welcome sent', 'Reminder sent', 'Webinar link sent', 'Thank-you sent',
                          'Website access sent'];
 const COL = { name: 4, email: 5, phone: 6, status: 8, access: 15 };   // 1-based columns in Payments
 
@@ -83,7 +83,7 @@ const SUPABASE_URL = 'https://xexcztrlcnqptlhjxqjg.supabase.co';
 // Settings tab: label → default value. Edit the values in the sheet, not here.
 const SETTINGS = {
   date:      ['Workshop date & time (IST, yyyy-mm-dd hh:mm)', '2026-11-22 10:00'],
-  live:      ['Live link (Zoom / Meet)', ''],
+  live:      ['Webinar link', ''],
   community: ['WhatsApp community link', 'https://chat.whatsapp.com/KUMcVB1BMy64Pvjbu79zj0'],
   feedback:  ['Feedback / bonus link', ''],
   ownerWa:   ['Your WhatsApp number (for test messages)', ''],
@@ -118,7 +118,7 @@ function doGet(e) {
 /**
  * Landing form asks: has this email or phone already paid? Only answers "yes" when the
  * Testing switch is OFF (live). On "yes", re-sends the WhatsApp Community (welcome) and the
- * Zoom-link emails to the email we have on file — never to whatever was typed — at most
+ * webinar-link emails to the email we have on file — never to whatever was typed — at most
  * once every 6 hours per person. Only a yes/no goes back to the page.
  */
 function checkRegistered_(email, phone) {
@@ -153,7 +153,7 @@ function checkRegistered_(email, phone) {
 
 /**
  * One email for someone who tries to register again (Testing OFF): you're already registered,
- * the payment we already have, the workshop time, the Zoom link (or when it comes), the WhatsApp
+ * the payment we already have, the workshop time, the webinar link (or when it comes), the WhatsApp
  * community and the website login.
  */
 function alreadyRegisteredEmail_(buyer, row, s) {
@@ -168,12 +168,12 @@ function alreadyRegisteredEmail_(buyer, row, s) {
   const btn = (url, label, color) => '<p style="margin:18px 0"><a href="' + escape_(url) +
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
     label + '</a></p>';
-  const zoom = s.live
-    ? '<p><b>Your meeting link:</b></p>' + btn(s.live, 'Join the live workshop', '#004AAD') +
+  const webinar = s.live
+    ? '<p><b>Your webinar link:</b></p>' + btn(s.live, 'Join the webinar', '#004AAD') +
       '<p style="color:#47576B;font-size:13px">' + escape_(s.live) + '</p>'
-    : '<p>Meeting link మీకు <b>' +
+    : '<p>Webinar link మీకు <b>' +
       escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "d MMMM, h:mm a")) +
-      ' IST</b> కి (workshop కి 1 గంట ముందు) email లో వస్తుంది.<br>The meeting link will be emailed to you on <b>' +
+      ' IST</b> కి (workshop కి 1 గంట ముందు) email లో వస్తుంది.<br>The webinar link will be emailed to you on <b>' +
       escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a")) +
       ' IST</b>, one hour before we start.</p>';
   const login = ACADEMY_URL + 'login?email=' + encodeURIComponent(String(buyer.email || '').trim()) +
@@ -192,7 +192,7 @@ function alreadyRegisteredEmail_(buyer, row, s) {
     '<p>📅 <b>' + escape_(when) + '</b></p>' +
     '<p>Please join the call on your <b>laptop</b>, and keep your <b>phone</b> with you. We will practice on the phone together during the session.<br>' +
     'Call లో laptop తో join అవ్వండి, మీ phone దగ్గర ఉంచుకోండి.</p>' +
-    zoom +
+    webinar +
     '<p>If you haven\'t yet, join our WhatsApp community for updates:</p>' +
     btn(s.community, 'Join the WhatsApp community', '#25D366') +
     '';
@@ -244,7 +244,7 @@ function tick() {
 /* ================= one-time updates (run automatically by the timer) ================= */
 
 /**
- * Sends the live-link (Zoom) and thank-you emails NOW to everyone who has paid (Razorpay
+ * Sends the webinar-link and thank-you emails NOW to everyone who has paid (Razorpay
  * "captured"), one of each per person, with a copy to you. These early copies are not
  * stamped in the sheet, so the scheduled ones still go on 22 Nov 9:00 AM and 12:30 PM IST.
  * Runs once automatically after this code is saved; can also be run from the editor.
@@ -252,7 +252,7 @@ function tick() {
 function sendLiveAndThanksNow() {
   const s = settings_();
   const start = workshopStart_(s);
-  const sSend = Object.assign({}, s, { live: s.live || 'https://zoom.us/', testing: 'ON' });   // ON = copy to you
+  const sSend = Object.assign({}, s, { live: s.live || 'https://example.com/webinar-link', testing: 'ON' });   // ON = copy to you
   const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
   if (sh.getLastRow() < 2) return [];
   const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
@@ -327,6 +327,12 @@ function oneTimeUpdates_() {
     props.setProperty('DONE_PAID_99_TAB_V1', new Date().toISOString());
   }
 
+  if (!props.getProperty('DONE_WEBINAR_HEADER_V1')) {
+    const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+    sh.getRange(1, 13).setValue(PAYMENT_HEADERS[12]);   // "Live link sent" → "Webinar link sent"
+    props.setProperty('DONE_WEBINAR_HEADER_V1', new Date().toISOString());
+  }
+
   if (!props.getProperty('DONE_ACCESS_HEADER_V1')) {
     const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
     sh.getRange(1, COL.access).setValue(PAYMENT_HEADERS[COL.access - 1]);
@@ -346,7 +352,7 @@ function oneTimeUpdates_() {
   }
 
   // Early test copies sent before a stage opened were stamped by an older version; clear
-  // them once so the real reminder / live link / thank-you still go on schedule.
+  // them once so the real reminder / webinar link / thank-you still go on schedule.
   if (!props.getProperty('DONE_CLEAR_EARLY_STAMPS_V1')) {
     props.setProperty('DONE_CLEAR_EARLY_STAMPS_V1', new Date().toISOString());
     const start = workshopStart_(settings_()).getTime(), now = Date.now();
@@ -375,7 +381,7 @@ function oneTimeUpdates_() {
     lead.email = ONE_TIME_TEST_EMAIL;
     const s = settings_();
     const start = workshopStart_(s);
-    const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
+    const sTest = Object.assign({}, s, { live: s.live || 'https://example.com/webinar-link' });
     const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
     MailApp.sendEmail(OWNER_EMAIL, 'TIC-AI: script updated ✅ test emails sent',
       'The new script is running.\n\nWorkshop date in Settings: ' + settings_().date +
@@ -576,9 +582,9 @@ function runMessages() {
         if (!testing && k && sentTo[st.key][k]) { sh.getRange(i + 2, st.col).setValue(DUP + acctNote); r[st.col - 1] = DUP; continue; }
         if (MailApp.getRemainingDailyQuota() < 1) { console.error('Daily email quota used up; will retry.'); return; }
         // Testing preview of a later email (sent early): don't stamp it, so the real one still
-        // goes at its scheduled time (21 Nov 6 PM reminder, 22 Nov 9 AM live link, 12:30 PM thank-you).
+        // goes at its scheduled time (21 Nov 6 PM reminder, 22 Nov 9 AM webinar link, 12:30 PM thank-you).
         const preview = allNow && st.key !== 'welcome' && !st.due(now, start.getTime());
-        const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://zoom.us/' }) : s;
+        const sSend = (allNow && !s.live) ? Object.assign({}, s, { live: 'https://example.com/webinar-link' }) : s;
         const result = sendStage_(st.key, buyer, sSend, start) + acctNote;
         if (preview) continue;
         sh.getRange(i + 2, st.col).setValue(result);
@@ -671,7 +677,7 @@ function message_(key, b, s, start) {
             '<p>One thing to do now: join our WhatsApp community. That\'s where we share updates, and where you\'ll meet other business owners like you.<br>' +
             'ఇప్పుడే మా WhatsApp community లో join అవ్వండి. Updates అక్కడే పెడతాం.</p>' +
             button(s.community, 'Join the WhatsApp community', '#25D366') +
-            '<p>We\'ll email you the meeting link one hour before we start. If you have any question before then, just reply to this email.</p>',
+            '<p>We\'ll email you the webinar link one hour before we start. If you have any question before then, just reply to this email.</p>',
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
     };
     case 'access': return {
@@ -713,17 +719,17 @@ function message_(key, b, s, start) {
             'మన workshop <b>రేపే</b>. మిమ్మల్ని కలవడానికి ఎదురు చూస్తున్నాం.</p>' +
             '<p>📅 <b>' + escape_(when) + '</b></p>' +
             devices +
-            '<p>Please keep both charged and your internet on. We\'ll send the meeting link one hour before we start.</p>' +
+            '<p>Please keep both charged and your internet on. We\'ll send the webinar link one hour before we start.</p>' +
             button(s.community, 'Open the WhatsApp community', '#25D366'),
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
     case 'live': return {
-      subject: (fullName ? first + ', we' : 'We') + ' start at ' + time + '. Here is your link',
+      subject: (fullName ? first + ', we' : 'We') + ' start at ' + time + '. Here is your webinar link',
       html: hi +
             '<p>We start at <b>' + escape_(time) + '</b> today. Please join a few minutes early, so we can begin on time.<br>' +
             'ఈరోజు <b>' + escape_(time) + '</b> కి మొదలుపెడతాం. కొన్ని నిమిషాలు ముందే join అవ్వండి.</p>' +
-            button(s.live, 'Join the live workshop', '#004AAD') +
-            '<p style="color:#47576B">Link: ' + escape_(s.live) + '</p>' +
+            button(s.live, 'Join the webinar', '#004AAD') +
+            '<p style="color:#47576B">Webinar link: ' + escape_(s.live) + '</p>' +
             devices +
             '<p>See you shortly!</p>',
       waTemplate: 'sntg_live_link', waParams: [first, time, s.live]
@@ -749,14 +755,14 @@ function emailLayout_(inner) {
          '<p style="color:#7A8CA3;font-size:12px">Have a question? Just reply to this email. We read every reply.</p></div>';
 }
 
-/** Emails you once a day if the live stage is due but the live link is empty. */
+/** Emails you once a day if the webinar-link stage is due but the webinar link is empty. */
 function alertMissingLiveLink_() {
   const props = PropertiesService.getScriptProperties();
   const today = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
   if (props.getProperty('LIVE_LINK_ALERT') === today) return;
   props.setProperty('LIVE_LINK_ALERT', today);
-  MailApp.sendEmail(OWNER_EMAIL, '⚠️ Add the live link - workshop starts within the hour',
-    'Buyers are waiting for the live link. Paste it in the Settings tab ("' + SETTINGS.live[0] +
+  MailApp.sendEmail(OWNER_EMAIL, '⚠️ Add the webinar link - workshop starts within the hour',
+    'Buyers are waiting for the webinar link. Paste it in the Settings tab ("' + SETTINGS.live[0] +
     '") and it goes out within 5 minutes: ' + ss_().getUrl());
 }
 
@@ -765,7 +771,7 @@ function sendTestToMe() {
   const s = settings_();
   const start = workshopStart_(s);
   const me = { name: 'Test', email: OWNER_EMAIL, phone: String(s.ownerWa || '') };
-  const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
+  const sTest = Object.assign({}, s, { live: s.live || 'https://example.com/webinar-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, me, sTest, start));
   console.log(out.join('\n'));
   return out;
@@ -836,7 +842,7 @@ function sendTestToLatestLead() {
   if (!lead.email) throw new Error('The latest form entry has no email.');
   const s = settings_();
   const start = workshopStart_(s);
-  const sTest = Object.assign({}, s, { live: s.live || 'https://meet.google.com/test-link' });
+  const sTest = Object.assign({}, s, { live: s.live || 'https://example.com/webinar-link' });
   const out = STAGES.map(st => st.key + ': ' + sendStage_(st.key, lead, sTest, start));
   console.log('Sent to ' + lead.name + ' <' + lead.email + '>\n' + out.join('\n'));
   return out;
@@ -1174,6 +1180,10 @@ function ensureSettings_() {
     sh.setFrozenRows(1);
     sh.getRange('B:B').setNumberFormat('@');   // keep dates/links as plain text
     sh.setColumnWidth(1, 380); sh.setColumnWidth(2, 420);
+  }
+  if (sh.getLastRow() > 1) {   // renamed setting: keep the value, update the label
+    const labels = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    labels.forEach((r, i) => { if (r[0] === 'Live link (Zoom / Meet)') sh.getRange(i + 2, 1).setValue(SETTINGS.live[0]); });
   }
   const have = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().map(r => r[0]) : [];
   Object.keys(SETTINGS).forEach(k => {
