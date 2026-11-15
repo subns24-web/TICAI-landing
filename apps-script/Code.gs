@@ -169,11 +169,11 @@ function alreadyRegisteredEmail_(buyer, row, s) {
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
     label + '</a></p>';
   const zoom = s.live
-    ? '<p>🔴 <b>Zoom link / Live link:</b></p>' + btn(s.live, 'Join the live workshop / Live లో join అవ్వండి', '#004AAD') +
+    ? '<p>🔴 <b>Meeting link / Live link:</b></p>' + btn(s.live, 'Join the live workshop / Live లో join అవ్వండి', '#004AAD') +
       '<p style="color:#47576B;font-size:13px">' + escape_(s.live) + '</p>'
-    : '<p>🔴 <b>Zoom link</b> మీకు <b>' +
+    : '<p>🔴 <b>Meeting link</b> మీకు <b>' +
       escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "d MMMM, h:mm a")) +
-      ' IST</b> కి (workshop కి 1 గంట ముందు) email లో వస్తుంది.<br>The Zoom link will be emailed to you on <b>' +
+      ' IST</b> కి (workshop కి 1 గంట ముందు) email లో వస్తుంది.<br>The meeting link will be emailed to you on <b>' +
       escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a")) +
       ' IST</b>, one hour before we start.</p>';
   const login = ACADEMY_URL + 'login?email=' + encodeURIComponent(String(buyer.email || '').trim()) +
