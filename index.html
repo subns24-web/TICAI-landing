@@ -845,7 +845,7 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
     <div class="offer">
       <div class="offer-head">
         <h3 class="i18n" data-te="Live Workshop + 4 Bonus" data-en="Live workshop + 4 bonuses"></h3>
-        <p class="i18n" data-te="2 గంటలు · పూర్తిగా తెలుగులో · Zoom లో" data-en="2 hours · fully in Telugu · on Zoom"></p>
+        <p class="i18n" data-te="2 గంటలు · పూర్తిగా తెలుగులో · online meeting" data-en="2 hours · fully in Telugu · online meeting"></p>
       </div>
       <ul class="stack">
         <li><span class="sn">1</span><span class="sb"><b class="i18n" data-te="2 గంటల Live Workshop (తెలుగులో)" data-en="The 2-hour live workshop, in Telugu"></b><span class="i18n" data-te="8 modules, live demo, మధ్యలో మీ ప్రశ్నలకు సమాధానాలు." data-en="8 modules, live demos, your questions answered as we go."></span></span><span class="val">₹1,999</span></li>
@@ -876,18 +876,18 @@ footer{background:#020A14;color:#7A8CA3;padding:38px 0 28px;font-size:.85rem;tex
     <div class="sec-head">
       <div class="eyebrow i18n" data-te="Register చేశాక" data-en="After you register"></div>
       <h2 class="i18n" data-te="తర్వాత ఏం జరుగుతుంది" data-en="Exactly what happens next"></h2>
-      <p class="i18n" data-te="మీరు ఏమీ వెతుక్కోవాల్సిన అవసరం లేదు. అంతా మీ WhatsApp కే వస్తుంది." data-en="Nothing to hunt for. It all comes to your WhatsApp."></p>
+      <p class="i18n" data-te="మీరు ఏమీ వెతుక్కోవాల్సిన అవసరం లేదు. అంతా మీ email, WhatsApp కే వస్తుంది." data-en="Nothing to hunt for. It all comes to your email and WhatsApp."></p>
     </div>
     <div class="steps">
       <div class="stp">
         <div class="sn">1</div>
         <b class="i18n" data-te="వెంటనే confirmation" data-en="Instant confirmation"></b>
-        <p class="i18n" data-te="Payment అయిన క్షణమే మీ WhatsApp కి confirmation message వస్తుంది." data-en="The moment your payment goes through, a confirmation lands on your WhatsApp."></p>
+        <p class="i18n" data-te="Payment అయిన వెంటనే మీ email కి confirmation వస్తుంది — అందులో WhatsApp community access ఉంటుంది." data-en="Right after your payment, you get an email with your WhatsApp community access."></p>
       </div>
       <div class="stp">
         <div class="sn">2</div>
-        <b class="i18n" data-te="ముందు రోజు Zoom link" data-en="Zoom link the day before"></b>
-        <p class="i18n" data-te="Workshop కి ముందు రోజు, మళ్ళీ ఒక గంట ముందు — link అదే WhatsApp కే." data-en="The day before, and again an hour before — the link comes to that same WhatsApp."></p>
+        <b class="i18n" data-te="Meeting link, reminder" data-en="Meeting link and reminder"></b>
+        <p class="i18n" data-te="Workshop కి ముందు రోజు reminder, మళ్ళీ ఒక గంట ముందు — meeting link మీ email కి, WhatsApp community లో వస్తుంది." data-en="A reminder the day before, and the meeting link an hour before — by email and in the WhatsApp community."></p>
       </div>
       <div class="stp">
         <div class="sn">3</div>
@@ -1362,8 +1362,8 @@ async function alreadyRegistered(email, phone){
 /* Shown in the page's current language and switched by the తెలుగు / EN buttons like every
    other .i18n element (setLang copies data-te / data-en into it). */
 const ALREADY_REG = {
-  te: `✅ <b>మీరు ఇప్పటికే ఈ email / phone number తో register అయ్యారు.</b><br>మళ్ళీ payment అవసరం లేదు. Zoom link మరియు WhatsApp community link ఉన్న emails ను మీరు register చేసిన email కి మళ్ళీ పంపాము. Spam / Promotions folder కూడా చూడండి.`,
-  en: `✅ <b>You have already registered with this email / phone number.</b><br>No need to pay again. We've re-sent the emails with your Zoom link and WhatsApp community link to the email you registered with. Please check Spam / Promotions too.`
+  te: `✅ <b>మీరు ఇప్పటికే ఈ email / phone number తో register అయ్యారు.</b><br>మళ్ళీ payment అవసరం లేదు. Meeting link మరియు WhatsApp community link ఉన్న emails ను మీరు register చేసిన email కి మళ్ళీ పంపాము. Spam / Promotions folder కూడా చూడండి.`,
+  en: `✅ <b>You have already registered with this email / phone number.</b><br>No need to pay again. We've re-sent the emails with your meeting link and WhatsApp community link to the email you registered with. Please check Spam / Promotions too.`
 };
 
 function showAlreadyRegistered(form){
