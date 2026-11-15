@@ -188,7 +188,7 @@ function alreadyRegisteredEmail_(buyer, row, s) {
         'Amount: <b>₹' + escape_(String(row[2])) + '</b>' + (paidAt ? '<br>Paid on: <b>' + escape_(paidAt) + '</b>' : '') +
         (row[1] ? '<br>Payment ID: <b>' + escape_(String(row[1])) + '</b>' : '') + '</p>' +
     '</div>' +
-    '<p>📅 <b>' + escape_(when) + '</b><br>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practise live during the call.</p>' +
+    '<p>📅 <b>' + escape_(when) + '</b><br>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.</p>' +
     zoom +
     '<p>Live updates కోసం WhatsApp community / Join the WhatsApp community:</p>' +
     btn(s.community, 'Join the WhatsApp Community', '#25D366') +
@@ -648,7 +648,7 @@ function message_(key, b, s, start) {
       subject: '🎉 ' + who + 'your registration is confirmed — ' + WORKSHOP_NAME,
       html: hi + '<p><b>Congratulations on taking your first steps!</b> Your registration is confirmed. ' +
             'Get ready for your transformation 🚀</p>' +
-            '<p>📅 <b>' + escape_(when) + '</b><br>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practise live during the call.</p>' +
+            '<p>📅 <b>' + escape_(when) + '</b><br>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.</p>' +
             '<p>Join our WhatsApp community for live updates:</p>' +
             button(s.community, 'Join the WhatsApp Community', '#25D366') +
             '<p>We will send the live link 1 hour before the workshop.</p>',
@@ -717,7 +717,7 @@ function message_(key, b, s, start) {
       subject: '⏰ ' + who + 'your workshop is tomorrow — ' + WORKSHOP_NAME,
       html: hi + '<p>A quick reminder — your workshop is <b>tomorrow</b>.</p>' +
             '<p>📅 <b>' + escape_(when) + '</b></p>' +
-            '<p>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practise live during the call.<br>Keep both charged and your internet on. The live link comes 1 hour before we start.</p>' +
+            '<p>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.<br>Keep both charged and your internet on. The live link comes 1 hour before we start.</p>' +
             button(s.community, 'Open the WhatsApp Community', '#25D366'),
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
@@ -725,7 +725,7 @@ function message_(key, b, s, start) {
       subject: '🔴 ' + who + 'your live link — ' + when,
       html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
             '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
-            '<p>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practise live during the call.</p>' +
+            '<p>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.</p>' +
             button(s.live, 'Join the live workshop', '#004AAD') +
             '<p style="color:#47576B">Link: ' + escape_(s.live) + '</p>',
       waTemplate: 'sntg_live_link', waParams: [first, time, s.live]
