@@ -745,7 +745,7 @@ function message_(key, b, s, start) {
 function emailLayout_(inner) {
   return '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#04101F;max-width:560px">' +
          inner + '<p style="margin-top:26px">Regards,<br><b>Team TIC AI</b><br>' +
-         '<span style="color:#47576B;font-size:13px">TIC-AI, Telugu International Council of AI for Business</span></p>' +
+         '<span style="color:#47576B;font-size:13px">TIC-AI, Telugu International Council for AI in Business</span></p>' +
          '<p style="color:#7A8CA3;font-size:12px">Have a question? Just reply to this email. We read every reply.</p></div>';
 }
 
