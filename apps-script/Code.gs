@@ -195,7 +195,7 @@ function alreadyRegisteredEmail_(buyer, row, s) {
     zoom +
     '<p>If you haven\'t yet, join our WhatsApp community for updates:</p>' +
     btn(s.community, 'Join the WhatsApp community', '#25D366') +
-    '<p>Your free TIC AI Academy login: <b>' + escape_(buyer.email) + '</b>, password <code>' + ACADEMY_TEMP_PASSWORD +
+    '<p>Your complimentary TIC AI Academy login: <b>' + escape_(buyer.email) + '</b>, password <code>' + ACADEMY_TEMP_PASSWORD +
       '</code> (or the one you set yourself).</p>' +
     btn(login, 'Log in to TIC AI Academy', '#004AAD');
   return { to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
@@ -666,21 +666,21 @@ function message_(key, b, s, start) {
     case 'welcome': return {
       subject: '🎉 ' + (fullName ? first + ', you\'re in!' : 'You\'re in!') + ' See you on ' + dayShort,
       html: hi +
-            '<p>Thank you for registering. I\'m really glad you\'re joining us, and your seat is confirmed.<br>' +
-            'మీ seat confirm అయింది. మీరు మాతో కలుస్తున్నందుకు చాలా సంతోషం.</p>' +
+            '<p><b>Congratulations on taking your first step to transform your business using AI!</b> Your seat is confirmed, and we\'re really glad you\'re joining us.<br>' +
+            'AI తో మీ business ని మార్చే మొదటి అడుగు వేసినందుకు అభినందనలు! మీ seat confirm అయింది.</p>' +
             '<p>📅 <b>' + escape_(when) + '</b></p>' +
             devices +
-            '<p>One thing to do now: join our WhatsApp community. That\'s where I share updates, and where you\'ll meet other business owners like you.<br>' +
-            'ఇప్పుడే మా WhatsApp community లో join అవ్వండి. Updates అక్కడే పెడతాను.</p>' +
+            '<p>One thing to do now: join our WhatsApp community. That\'s where we share updates, and where you\'ll meet other business owners like you.<br>' +
+            'ఇప్పుడే మా WhatsApp community లో join అవ్వండి. Updates అక్కడే పెడతాం.</p>' +
             button(s.community, 'Join the WhatsApp community', '#25D366') +
-            '<p>I\'ll email you the meeting link one hour before we start. If you have any question before then, just reply to this email.</p>',
+            '<p>We\'ll email you the meeting link one hour before we start. If you have any question before then, just reply to this email.</p>',
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
     };
     case 'access': return {
-      subject: (fullName ? first + ', your' : 'Your') + ' free TIC AI Academy access is ready',
+      subject: (fullName ? first + ', your' : 'Your') + ' complimentary TIC AI Academy access is ready',
       html: hi +
-            '<p>As a small thank-you for joining the workshop, you get <b>free access to TIC AI Academy</b>, our learning website.<br>' +
-            'Workshop లో join అయినందుకు, మా learning website <b>TIC AI Academy</b> కి మీకు free access ఇస్తున్నాం.</p>' +
+            '<p>As a workshop participant, you get <b>complimentary access to TIC AI Academy</b>, our learning website.<br>' +
+            'Workshop లో join అయినందుకు, మా learning website <b>TIC AI Academy</b> కి మీకు complimentary access ఇస్తున్నాం.</p>' +
             '<p>Tap the button below. Your email and password are already filled in, so you only need to tap "Log in".</p>' +
             // Opens the login page with the email and password already filled in (password in the
             // #fragment, which is never sent to the server).
@@ -700,7 +700,7 @@ function message_(key, b, s, start) {
       return {
         subject: (fullName ? first + ', your' : 'Your') + ' full TIC AI course is unlocked',
         html: hi +
-              '<p>Thank you for your ₹4999 payment. Your <b>full TIC AI course</b> is now unlocked.<br>' +
+              '<p><b>Congratulations on taking the next step to transform your business using AI!</b> Your ₹4999 payment is received, and your <b>full TIC AI course</b> is now unlocked.<br>' +
               'మీ ₹4999 payment అందింది. మీ <b>పూర్తి TIC AI course</b> ఇప్పుడు open అయింది.</p>' +
               '<p>Every course, lesson, template and workflow on TIC AI Academy is now open to you. Take it one lesson at a time, and try each idea in your own business as you go.<br>' +
               'TIC AI Academy లోని అన్ని courses, lessons, templates, workflows మీకు open. ఒక్కో lesson చేసి, మీ business లో try చేయండి.</p>' +
@@ -717,11 +717,11 @@ function message_(key, b, s, start) {
     case 'reminder': return {
       subject: (fullName ? first + ', see' : 'See') + ' you tomorrow at ' + time,
       html: hi +
-            '<p>Just a friendly reminder: our workshop is <b>tomorrow</b>. I\'m looking forward to it.<br>' +
-            'మన workshop <b>రేపే</b>. మిమ్మల్ని కలవడానికి ఎదురు చూస్తున్నాను.</p>' +
+            '<p>Just a friendly reminder: our workshop is <b>tomorrow</b>. We\'re looking forward to seeing you.<br>' +
+            'మన workshop <b>రేపే</b>. మిమ్మల్ని కలవడానికి ఎదురు చూస్తున్నాం.</p>' +
             '<p>📅 <b>' + escape_(when) + '</b></p>' +
             devices +
-            '<p>Please keep both charged and your internet on. I\'ll send the meeting link one hour before we start.</p>' +
+            '<p>Please keep both charged and your internet on. We\'ll send the meeting link one hour before we start.</p>' +
             button(s.community, 'Open the WhatsApp community', '#25D366'),
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
@@ -739,11 +739,11 @@ function message_(key, b, s, start) {
     case 'thanks': return {
       subject: 'Thank you for coming' + (fullName ? ', ' + first : ''),
       html: hi +
-            '<p>Thank you for spending your morning with us. I hope you\'re already trying a few of the things we did today in your business.<br>' +
-            'మాతో ఈ సమయం గడిపినందుకు ధన్యవాదాలు. ఈరోజు నేర్చుకున్నవి మీ business లో try చేయడం మొదలుపెట్టారని ఆశిస్తున్నాను.</p>' +
-            (s.feedback ? '<p>I\'d love to hear what you thought. Please share your feedback, and pick up your bonus files here:</p>' +
+            '<p>Thank you for spending your morning with us. We hope you\'re already trying a few of the things we did today in your business.<br>' +
+            'మాతో ఈ సమయం గడిపినందుకు ధన్యవాదాలు. ఈరోజు నేర్చుకున్నవి మీ business లో try చేయడం మొదలుపెట్టారని ఆశిస్తున్నాం.</p>' +
+            (s.feedback ? '<p>We\'d love to hear what you thought. Please share your feedback, and pick up your bonus files here:</p>' +
                           button(s.feedback, 'Share feedback and get your files', '#004AAD') : '') +
-            '<p>Stay in the WhatsApp community. I keep sharing tips there, and it\'s a good place to ask when you get stuck.</p>' +
+            '<p>Stay in the WhatsApp community. We keep sharing tips there, and it\'s a good place to ask when you get stuck.</p>' +
             button(s.community, 'WhatsApp community', '#25D366'),
       waTemplate: 'sntg_thank_you', waParams: [first, s.feedback || s.community]
     };
@@ -752,9 +752,9 @@ function message_(key, b, s, start) {
 
 function emailLayout_(inner) {
   return '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#04101F;max-width:560px">' +
-         inner + '<p style="margin-top:26px">Warm regards,<br><b>Santhosh Nimmani</b><br>' +
+         inner + '<p style="margin-top:26px">Warm regards,<br><b>Team TIC AI</b><br>' +
          '<span style="color:#47576B;font-size:13px">TIC-AI, Telugu International Council of AI for Business</span></p>' +
-         '<p style="color:#7A8CA3;font-size:12px">Have a question? Just reply to this email. I read every reply.</p></div>';
+         '<p style="color:#7A8CA3;font-size:12px">Have a question? Just reply to this email. We read every reply.</p></div>';
 }
 
 /** Emails you once a day if the live stage is due but the live link is empty. */
