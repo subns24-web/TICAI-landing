@@ -162,41 +162,44 @@ function alreadyRegisteredEmail_(buyer, row, s) {
   const day = Number(Utilities.formatDate(start, 'Asia/Kolkata', 'd'));
   const suffix = (day % 100 >= 11 && day % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th');
   const when = Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE') + ', ' + day + suffix + ' ' +
-               Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' · ' +
+               Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' at ' +
                Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
   const paidAt = isDate_(row[0]) ? Utilities.formatDate(row[0], 'Asia/Kolkata', "d MMM yyyy, h:mm a") + ' IST' : '';
   const btn = (url, label, color) => '<p style="margin:18px 0"><a href="' + escape_(url) +
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
     label + '</a></p>';
   const zoom = s.live
-    ? '<p>🔴 <b>Meeting link / Live link:</b></p>' + btn(s.live, 'Join the live workshop / Live లో join అవ్వండి', '#004AAD') +
+    ? '<p><b>Your meeting link:</b></p>' + btn(s.live, 'Join the live workshop', '#004AAD') +
       '<p style="color:#47576B;font-size:13px">' + escape_(s.live) + '</p>'
-    : '<p>🔴 <b>Meeting link</b> మీకు <b>' +
+    : '<p>Meeting link మీకు <b>' +
       escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "d MMMM, h:mm a")) +
       ' IST</b> కి (workshop కి 1 గంట ముందు) email లో వస్తుంది.<br>The meeting link will be emailed to you on <b>' +
       escape_(Utilities.formatDate(new Date(start.getTime() - HOUR), 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a")) +
       ' IST</b>, one hour before we start.</p>';
   const login = ACADEMY_URL + 'login?email=' + encodeURIComponent(String(buyer.email || '').trim()) +
                 '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD);
+  const first = name.split(/\s+/)[0];
   const html =
-    (name ? '<p>నమస్కారం <b>' + escape_(name) + '</b> గారు 🙏<br>Dear <b>' + escape_(name) + '</b>,</p>' : '<p>నమస్కారం 🙏</p>') +
-    '<p>✅ <b>మీరు ఇప్పటికే register అయ్యారు — మళ్ళీ pay చేయాల్సిన అవసరం లేదు.</b><br>' +
-    '<b>You are already registered — no need to pay again.</b></p>' +
+    (name ? '<p>నమస్కారం ' + escape_(name) + ' గారు 🙏<br>Hi ' + escape_(first) + ',</p>' : '<p>నమస్కారం 🙏<br>Hi there,</p>') +
+    '<p>Good news: you\'re <b>already registered</b>, so there\'s no need to pay again.<br>' +
+    'మీరు ఇప్పటికే register అయ్యారు. మళ్ళీ pay చేయాల్సిన అవసరం లేదు.</p>' +
     '<div style="border:1px solid #DDE6F2;background:#F3F7FD;border-radius:12px;padding:14px 18px;margin:16px 0">' +
-      '<p style="margin:0 0 6px"><b>💳 మీ payment / Your payment</b></p>' +
+      '<p style="margin:0 0 6px"><b>Your payment / మీ payment</b></p>' +
       '<p style="margin:0;font-size:14px">' +
         'Amount: <b>₹' + escape_(String(row[2])) + '</b>' + (paidAt ? '<br>Paid on: <b>' + escape_(paidAt) + '</b>' : '') +
         (row[1] ? '<br>Payment ID: <b>' + escape_(String(row[1])) + '</b>' : '') + '</p>' +
     '</div>' +
-    '<p>📅 <b>' + escape_(when) + '</b><br>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.</p>' +
+    '<p>📅 <b>' + escape_(when) + '</b></p>' +
+    '<p>Please join the call on your <b>laptop</b>, and keep your <b>phone</b> with you. We will practice on the phone together during the session.<br>' +
+    'Call లో laptop తో join అవ్వండి, మీ phone దగ్గర ఉంచుకోండి.</p>' +
     zoom +
-    '<p>Live updates కోసం WhatsApp community / Join the WhatsApp community:</p>' +
-    btn(s.community, 'Join the WhatsApp Community', '#25D366') +
-    '<p>🎁 <b>Bonus website:</b> login ID <b>' + escape_(buyer.email) + '</b> · password <code>' + ACADEMY_TEMP_PASSWORD +
-      '</code> (మీరు మార్చుకుంటే మీ password / or the one you set)</p>' +
-    btn(login, 'Log in to the website →', '#004AAD');
+    '<p>If you haven\'t yet, join our WhatsApp community for updates:</p>' +
+    btn(s.community, 'Join the WhatsApp community', '#25D366') +
+    '<p>Your free TIC AI Academy login: <b>' + escape_(buyer.email) + '</b>, password <code>' + ACADEMY_TEMP_PASSWORD +
+      '</code> (or the one you set yourself).</p>' +
+    btn(login, 'Log in to TIC AI Academy', '#004AAD');
   return { to: buyer.email, name: SENDER_NAME, replyTo: OWNER_EMAIL,
-           subject: '✅ ' + (name ? name + ', y' : 'Y') + 'ou are already registered — ' + WORKSHOP_NAME,
+           subject: (first ? first + ', you\'re' : 'You\'re') + ' already registered. See you on ' + Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE'),
            htmlBody: emailLayout_(html) };
 }
 
@@ -418,7 +421,7 @@ function alertMissingKeys_() {
   const today = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
   if (props.getProperty('KEYS_ALERT') === today) return;
   props.setProperty('KEYS_ALERT', today);
-  MailApp.sendEmail(OWNER_EMAIL, '⚠️ A buyer reached the success page — add Razorpay keys to confirm payments',
+  MailApp.sendEmail(OWNER_EMAIL, '⚠️ A buyer reached the success page - add Razorpay keys to confirm payments',
     'Someone just reached the payment success page, but the script cannot ask Razorpay whether the payment ' +
     'succeeded, so nothing was added to the Payments tab and no emails were sent.\n\n' +
     'Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Apps Script → Project Settings → Script properties. ' +
@@ -629,56 +632,65 @@ function message_(key, b, s, start) {
   const fullName = String(b.name || '').trim();
   const first = fullName.split(/\s+/)[0] || 'there';
   const hi = fullName
-    ? '<p>నమస్కారం <b>' + escape_(fullName) + '</b> గారు 🙏<br>Dear <b>' + escape_(fullName) + '</b>,</p>'
-    : '<p>నమస్కారం 🙏</p>';
-  const who = fullName ? fullName + ', ' : '';
+    ? '<p>నమస్కారం ' + escape_(fullName) + ' గారు 🙏<br>Hi ' + escape_(first) + ',</p>'
+    : '<p>నమస్కారం 🙏<br>Hi there,</p>';
+  const nm = fullName ? first + ', ' : '';
   const day = Number(Utilities.formatDate(start, 'Asia/Kolkata', 'd'));
   const suffix = (day % 100 >= 11 && day % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th');
   const time = Utilities.formatDate(start, 'Asia/Kolkata', 'h:mm a') + ' IST';
-  // e.g. "Sunday, 22nd November 2026 · 10:00 AM IST"
+  // e.g. "Sunday, 22nd November 2026 at 10:00 AM IST"
   const when = Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE') + ', ' + day + suffix + ' ' +
-               Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' · ' + time +
-               '';
+               Utilities.formatDate(start, 'Asia/Kolkata', 'MMMM yyyy') + ' at ' + time;
+  const dayShort = Utilities.formatDate(start, 'Asia/Kolkata', 'EEEE');   // e.g. "Sunday"
   const button = (url, label, color) => '<p style="margin:22px 0"><a href="' + escape_(url) +
     '" style="background:' + color + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block">' +
     label + '</a></p>';
+  const devices =
+    '<p>Please join the call on your <b>laptop</b>, and keep your <b>phone</b> with you. We will practice on the phone together during the session.<br>' +
+    'Call లో laptop తో join అవ్వండి, మీ phone దగ్గర ఉంచుకోండి. Session లో phone మీద కలిసి practice చేద్దాం.</p>';
+  const loginBox = (pwLine) =>
+    '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
+      '<p style="margin:0 0 8px"><b>Your login details / మీ login వివరాలు</b></p>' +
+      '<p style="margin:0">Login page: <a href="' + ACADEMY_URL + 'login">' + ACADEMY_URL.replace(/^https:\/\//, '') + 'login</a><br>' +
+      'Login ID: <b>' + escape_(b.email) + '</b> (the email you registered with)<br>' + pwLine + '</p>' +
+    '</div>';
+  const appBox =
+    '<div style="border-top:1px solid #eee;margin-top:22px;padding-top:16px">' +
+      '<p style="margin:0">You can also add TIC AI to your phone, so your courses are one tap away.<br>' +
+      'TIC AI ని మీ phone home screen కి add చేసుకుంటే, courses ఒక్క tap లో open అవుతాయి.</p>' +
+      button(ACADEMY_APP_URL, 'Install the TIC AI app', '#B8892A') +
+      '<p style="font-size:13px;color:#47576B;margin:0">Android: tap the button, then "Install". iPhone: open the link in Safari, tap Share, then "Add to Home Screen".</p>' +
+    '</div>';
 
   switch (key) {
     case 'welcome': return {
-      subject: '🎉 ' + who + 'your registration is confirmed — ' + WORKSHOP_NAME,
-      html: hi + '<p><b>Congratulations on taking your first steps!</b> Your registration is confirmed. ' +
-            'Get ready for your transformation 🚀</p>' +
-            '<p>📅 <b>' + escape_(when) + '</b><br>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.</p>' +
-            '<p>Join our WhatsApp community for live updates:</p>' +
-            button(s.community, 'Join the WhatsApp Community', '#25D366') +
-            '<p>We will send the live link 1 hour before the workshop.</p>',
+      subject: '🎉 ' + (fullName ? first + ', you\'re in!' : 'You\'re in!') + ' See you on ' + dayShort,
+      html: hi +
+            '<p>Thank you for registering. I\'m really glad you\'re joining us, and your seat is confirmed.<br>' +
+            'మీ seat confirm అయింది. మీరు మాతో కలుస్తున్నందుకు చాలా సంతోషం.</p>' +
+            '<p>📅 <b>' + escape_(when) + '</b></p>' +
+            devices +
+            '<p>One thing to do now: join our WhatsApp community. That\'s where I share updates, and where you\'ll meet other business owners like you.<br>' +
+            'ఇప్పుడే మా WhatsApp community లో join అవ్వండి. Updates అక్కడే పెడతాను.</p>' +
+            button(s.community, 'Join the WhatsApp community', '#25D366') +
+            '<p>I\'ll email you the meeting link one hour before we start. If you have any question before then, just reply to this email.</p>',
       waTemplate: 'sntg_welcome', waParams: [first, when, s.community]
     };
     case 'access': return {
-      subject: '🎁 Congratulations' + (fullName ? ' ' + fullName : '') + '! You have free access to our website',
-      html: hi + '<p><b>Congratulations!</b> 🎉 మీకు మా website కి <b>free access</b> లభించింది.<br>' +
-            'As a workshop participant, you get <b>free access to our website</b> — TIC AI Academy.</p>' +
+      subject: (fullName ? first + ', your' : 'Your') + ' free TIC AI Academy access is ready',
+      html: hi +
+            '<p>As a small thank-you for joining the workshop, you get <b>free access to TIC AI Academy</b>, our learning website.<br>' +
+            'Workshop లో join అయినందుకు, మా learning website <b>TIC AI Academy</b> కి మీకు free access ఇస్తున్నాం.</p>' +
+            '<p>Tap the button below. Your email and password are already filled in, so you only need to tap "Log in".</p>' +
             // Opens the login page with the email and password already filled in (password in the
             // #fragment, which is never sent to the server).
             button(ACADEMY_URL + 'login?email=' + encodeURIComponent(String(b.email || '').trim()) +
-                   '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD), 'Log in to the website →', '#004AAD') +
-            '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
-              '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
-              '<p style="margin:0">Login page: <a href="' + ACADEMY_URL + 'login">' + ACADEMY_URL.replace(/^https:\/\//, '') + 'login</a><br>' +
-              'Login ID: <b>' + escape_(b.email) + '</b> (మీరు register చేసిన email / your registered email)<br>' +
-              'Temporary password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code></p>' +
-            '</div>' +
-            '<p>మీరు register చేసిన email మరియు పై temporary password తో login అవ్వండి. Login అయిన తర్వాత మీ సొంత password పెట్టుకోవచ్చు.<br>' +
-            'Log in with your registered email and the temporary password above. You can set your own password after logging in.</p>' +
-            '<p style="font-size:13px;color:#47576B">మీరు ఇప్పటికే password మార్చుకుంటే, మీ password నే వాడండి — మర్చిపోతే login page లో "Password మర్చిపోయారా?" నొక్కండి.<br>' +
-            'Already changed your password? Use yours — or tap "Forgot password?" on the login page.</p>' +
-            // Install link: adds TIC AI to the phone's home screen (Android button / iPhone steps).
-            '<div style="border-top:1px solid #eee;margin-top:22px;padding-top:16px">' +
-              '<p style="margin:0"><b>📱 TIC AI app ని మీ phone లో install చేసుకోండి</b><br>' +
-              'Install the TIC AI app on your phone — open your courses straight from the home screen.</p>' +
-              button(ACADEMY_APP_URL, '📱 Install the TIC AI app / App install చేయండి', '#B8892A') +
-              '<p style="font-size:13px;color:#47576B;margin:0">Android: tap the button, then "Install". iPhone: open the link in Safari → Share → "Add to Home Screen".</p>' +
-            '</div>',
+                   '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD), 'Log in to TIC AI Academy', '#004AAD') +
+            loginBox('Temporary password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code>') +
+            '<p>Once you\'re in, you can set your own password from "My account".<br>' +
+            'Login అయిన తర్వాత "My account" లో మీ సొంత password పెట్టుకోవచ్చు.</p>' +
+            '<p style="font-size:13px;color:#47576B">Already changed your password? Use yours. Forgot it? Tap "Forgot password?" on the login page.</p>' +
+            appBox,
       waTemplate: null, waParams: []
     };
     case 'course': {
@@ -686,58 +698,53 @@ function message_(key, b, s, start) {
                        '&next=' + encodeURIComponent('/courses') +
                        (b.newAccount ? '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD) : '');
       return {
-        subject: '🎉 ' + (fullName ? fullName + ', ' : '') + 'your ₹4999 payment is received — your AI transformation starts now',
-        html: hi + '<p><b>Congratulations! Your ₹4999 payment is received</b> and your <b>full TIC AI course access is unlocked</b>. 🎉<br>' +
-              'మీ ₹4999 payment అందింది — మీ <b>పూర్తి TIC AI course access unlock అయింది</b>. 🎉</p>' +
-              '<p style="font-size:17px;margin:18px 0"><b>🚀 Unlock the potential of your business with AI — your transformation starts now.</b><br>' +
-              'AI తో మీ business సామర్థ్యాన్ని పూర్తిగా వెలికితీయండి — మీ transformation ఇప్పుడే మొదలవుతుంది.</p>' +
-              '<p>All courses, lessons, templates and workflows on TIC AI Academy are now open for you.<br>' +
-              'TIC AI Academy లోని అన్ని courses, lessons, templates, workflows ఇప్పుడు మీకు open.</p>' +
-              button(loginUrl, 'Open my ₹4999 course package →', '#004AAD') +
-              '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
-                '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
-                '<p style="margin:0">Login page: <a href="' + ACADEMY_URL + 'login">' + ACADEMY_URL.replace(/^https:\/\//, '') + 'login</a><br>' +
-                'Login ID: <b>' + escape_(b.email) + '</b><br>' +
-                (b.newAccount
-                  ? 'Password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code>'
-                  : 'Password: your current password (forgot it? tap "Forgot password?" on the login page)') +
-                '</p>' +
-              '</div>' +
-              '<p style="font-size:13px;color:#47576B">Already logged in? Tap <b>My account → "I\'ve paid — refresh my access"</b>, or log out and in again.<br>' +
-              'ఇప్పటికే login అయి ఉంటే, <b>My account → "I\'ve paid — refresh my access"</b> నొక్కండి.</p>' +
-              '<div style="border-top:1px solid #eee;margin-top:22px;padding-top:16px">' +
-                '<p style="margin:0"><b>📱 TIC AI app ని మీ phone లో install చేసుకోండి</b><br>' +
-                'Install the TIC AI app on your phone — open your courses straight from the home screen.</p>' +
-                button(ACADEMY_APP_URL, '📱 Install the TIC AI app / App install చేయండి', '#B8892A') +
-              '</div>',
+        subject: (fullName ? first + ', your' : 'Your') + ' full TIC AI course is unlocked',
+        html: hi +
+              '<p>Thank you for your ₹4999 payment. Your <b>full TIC AI course</b> is now unlocked.<br>' +
+              'మీ ₹4999 payment అందింది. మీ <b>పూర్తి TIC AI course</b> ఇప్పుడు open అయింది.</p>' +
+              '<p>Every course, lesson, template and workflow on TIC AI Academy is now open to you. Take it one lesson at a time, and try each idea in your own business as you go.<br>' +
+              'TIC AI Academy లోని అన్ని courses, lessons, templates, workflows మీకు open. ఒక్కో lesson చేసి, మీ business లో try చేయండి.</p>' +
+              button(loginUrl, 'Open my course', '#004AAD') +
+              loginBox(b.newAccount
+                ? 'Password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code>'
+                : 'Password: your current password (forgot it? tap "Forgot password?" on the login page)') +
+              '<p style="font-size:13px;color:#47576B">Already logged in? Open <b>My account</b> and tap <b>refresh my access</b>, or log out and log in again.<br>' +
+              'ఇప్పటికే login అయి ఉంటే, <b>My account</b> లో <b>refresh my access</b> నొక్కండి.</p>' +
+              appBox,
         waTemplate: null, waParams: []
       };
     }
     case 'reminder': return {
-      subject: '⏰ ' + who + 'your workshop is tomorrow — ' + WORKSHOP_NAME,
-      html: hi + '<p>A quick reminder — your workshop is <b>tomorrow</b>.</p>' +
+      subject: (fullName ? first + ', see' : 'See') + ' you tomorrow at ' + time,
+      html: hi +
+            '<p>Just a friendly reminder: our workshop is <b>tomorrow</b>. I\'m looking forward to it.<br>' +
+            'మన workshop <b>రేపే</b>. మిమ్మల్ని కలవడానికి ఎదురు చూస్తున్నాను.</p>' +
             '<p>📅 <b>' + escape_(when) + '</b></p>' +
-            '<p>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.<br>Keep both charged and your internet on. The live link comes 1 hour before we start.</p>' +
-            button(s.community, 'Open the WhatsApp Community', '#25D366'),
+            devices +
+            '<p>Please keep both charged and your internet on. I\'ll send the meeting link one hour before we start.</p>' +
+            button(s.community, 'Open the WhatsApp community', '#25D366'),
       waTemplate: 'sntg_reminder', waParams: [first, when]
     };
     case 'live': return {
-      subject: '🔴 ' + who + 'your live link — ' + when,
-      html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
-            '<p>The workshop starts at <b>' + escape_(time) + '</b>. Join a few minutes early:</p>' +
-            '<p>💻 Call లో join అవ్వడానికి <b>laptop</b>, 📱 live practical కి <b>phone</b> కావాలి.<br>💻 Join the call on a <b>laptop</b>, and 📱 keep your <b>phone</b> ready to practice live during the call.</p>' +
+      subject: (fullName ? first + ', we' : 'We') + ' start at ' + time + '. Here is your link',
+      html: hi +
+            '<p>We start at <b>' + escape_(time) + '</b> today. Please join a few minutes early, so we can begin on time.<br>' +
+            'ఈరోజు <b>' + escape_(time) + '</b> కి మొదలుపెడతాం. కొన్ని నిమిషాలు ముందే join అవ్వండి.</p>' +
             button(s.live, 'Join the live workshop', '#004AAD') +
-            '<p style="color:#47576B">Link: ' + escape_(s.live) + '</p>',
+            '<p style="color:#47576B">Link: ' + escape_(s.live) + '</p>' +
+            devices +
+            '<p>See you shortly!</p>',
       waTemplate: 'sntg_live_link', waParams: [first, time, s.live]
     };
     case 'thanks': return {
-      subject: '🙏 Thank you for joining, ' + (fullName || 'friend') + ' — ' + WORKSHOP_NAME,
-      html: hi + '<p>📅 <b>' + escape_(when) + '</b></p>' +
-            '<p>Thank you for attending! We hope you are already using AI in your business.</p>' +
-            (s.feedback ? '<p>Please share your feedback and get your bonus files here:</p>' +
-                          button(s.feedback, 'Feedback & bonus files', '#004AAD') : '') +
-            '<p>Stay in the community for tips and updates:</p>' +
-            button(s.community, 'WhatsApp Community', '#25D366'),
+      subject: 'Thank you for coming' + (fullName ? ', ' + first : ''),
+      html: hi +
+            '<p>Thank you for spending your morning with us. I hope you\'re already trying a few of the things we did today in your business.<br>' +
+            'మాతో ఈ సమయం గడిపినందుకు ధన్యవాదాలు. ఈరోజు నేర్చుకున్నవి మీ business లో try చేయడం మొదలుపెట్టారని ఆశిస్తున్నాను.</p>' +
+            (s.feedback ? '<p>I\'d love to hear what you thought. Please share your feedback, and pick up your bonus files here:</p>' +
+                          button(s.feedback, 'Share feedback and get your files', '#004AAD') : '') +
+            '<p>Stay in the WhatsApp community. I keep sharing tips there, and it\'s a good place to ask when you get stuck.</p>' +
+            button(s.community, 'WhatsApp community', '#25D366'),
       waTemplate: 'sntg_thank_you', waParams: [first, s.feedback || s.community]
     };
   }
@@ -745,8 +752,9 @@ function message_(key, b, s, start) {
 
 function emailLayout_(inner) {
   return '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#04101F;max-width:560px">' +
-         inner + '<p>— Team TIC-AI<br><span style="color:#47576B;font-size:13px">Telugu International Council of AI for Business</span></p>' +
-         '<p style="color:#7A8CA3;font-size:12px">Questions? Just reply to this email.</p></div>';
+         inner + '<p style="margin-top:26px">Warm regards,<br><b>Santhosh Nimmani</b><br>' +
+         '<span style="color:#47576B;font-size:13px">TIC-AI, Telugu International Council of AI for Business</span></p>' +
+         '<p style="color:#7A8CA3;font-size:12px">Have a question? Just reply to this email. I read every reply.</p></div>';
 }
 
 /** Emails you once a day if the live stage is due but the live link is empty. */
@@ -755,7 +763,7 @@ function alertMissingLiveLink_() {
   const today = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
   if (props.getProperty('LIVE_LINK_ALERT') === today) return;
   props.setProperty('LIVE_LINK_ALERT', today);
-  MailApp.sendEmail(OWNER_EMAIL, '⚠️ Add the live link — workshop starts within the hour',
+  MailApp.sendEmail(OWNER_EMAIL, '⚠️ Add the live link - workshop starts within the hour',
     'Buyers are waiting for the live link. Paste it in the Settings tab ("' + SETTINGS.live[0] +
     '") and it goes out within 5 minutes: ' + ss_().getUrl());
 }
@@ -1096,10 +1104,10 @@ function notifyOwner_(p, name, email, phone, via) {
     ['Amount', '₹' + (p.amount / 100)], ['Payment ID', p.id], ['Method', p.method],
     ['Paid at (IST)', when], ['Recorded via', via]
   ].map(r => '<tr><td style="padding:4px 12px 4px 0;color:#47576B">' + r[0] + '</td><td><b>' +
-             escape_(r[1] || '—') + '</b></td></tr>').join('');
+             escape_(r[1] || '-') + '</b></td></tr>').join('');
   MailApp.sendEmail({
     to: OWNER_EMAIL,
-    subject: '✅ New ₹' + (p.amount / 100) + ' payment — ' + (name || email || phone || p.id),
+    subject: '✅ New ₹' + (p.amount / 100) + ' payment - ' + (name || email || phone || p.id),
     htmlBody: '<p>Razorpay confirmed a successful payment for the ' + WORKSHOP_NAME +
               '. The buyer\'s welcome email is on its way.</p>' +
               '<table>' + rows + '</table>' +
