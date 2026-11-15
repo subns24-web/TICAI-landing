@@ -664,7 +664,7 @@ function message_(key, b, s, start) {
                    '#pw=' + encodeURIComponent(ACADEMY_TEMP_PASSWORD), 'Log in to the website →', '#004AAD') +
             '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
               '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
-              '<p style="margin:0">Website: <a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a><br>' +
+              '<p style="margin:0">Login page: <a href="' + ACADEMY_URL + 'login">' + ACADEMY_URL.replace(/^https:\/\//, '') + 'login</a><br>' +
               'Login ID: <b>' + escape_(b.email) + '</b> (మీరు register చేసిన email / your registered email)<br>' +
               'Temporary password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code></p>' +
             '</div>' +
@@ -696,7 +696,7 @@ function message_(key, b, s, start) {
               button(loginUrl, 'Open my ₹4999 course package →', '#004AAD') +
               '<div style="border:1px solid #e3ca7d;background:#fdfbf3;border-radius:12px;padding:14px 18px;margin:18px 0">' +
                 '<p style="margin:0 0 8px"><b>🔐 Login వివరాలు / Login details</b></p>' +
-                '<p style="margin:0">Website: <a href="' + ACADEMY_URL + '">' + ACADEMY_URL.replace(/^https:\/\//, '').replace(/\/$/, '') + '</a><br>' +
+                '<p style="margin:0">Login page: <a href="' + ACADEMY_URL + 'login">' + ACADEMY_URL.replace(/^https:\/\//, '') + 'login</a><br>' +
                 'Login ID: <b>' + escape_(b.email) + '</b><br>' +
                 (b.newAccount
                   ? 'Password: <code style="font-size:16px;background:#fff;border:1px solid #e3ca7d;border-radius:6px;padding:2px 8px">' + ACADEMY_TEMP_PASSWORD + '</code>'
