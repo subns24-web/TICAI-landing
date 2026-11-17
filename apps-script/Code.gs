@@ -68,8 +68,8 @@ const LEAD_HEADERS    = ['Submitted at', 'Name', 'WhatsApp', 'Email', 'Business'
 const PAYMENT_HEADERS = ['Paid at', 'Payment ID', 'Amount (₹)', 'Name', 'Email', 'WhatsApp / Phone',
                          'Method', 'Status', 'Recorded via', 'Razorpay notes',
                          'Welcome sent', 'Reminder sent', 'Webinar link sent', 'Thank-you sent',
-                         'Website access sent'];
-const COL = { name: 4, email: 5, phone: 6, status: 8, access: 15 };   // 1-based columns in Payments
+                         'Website access sent', 'AiSensy WhatsApp sent'];
+const COL = { name: 4, email: 5, phone: 6, status: 8, access: 15, aisensy: 16 };   // 1-based columns in Payments
 
 // Free website access email: sent to every buyer right after the welcome email.
 const ACADEMY_URL = 'https://tic-ai-academy.vercel.app/';
@@ -89,7 +89,10 @@ const SETTINGS = {
   feedback:  ['Feedback / bonus link', ''],
   ownerWa:   ['Your WhatsApp number (for test messages)', ''],
   enabled:   ['Send messages to buyers (ON / OFF)', 'ON'],
-  testing:   ['Testing: email every payment, even repeats by the same person (ON / OFF)', 'ON']
+  testing:   ['Testing: email every payment, even repeats by the same person (ON / OFF)', 'ON'],
+  // AiSensy WhatsApp campaign sent to every paying buyer (needs Script property AISENSY_API_KEY).
+  aiCampaign: ['AiSensy campaign name (exactly as in AiSensy → Campaigns)', ''],
+  aiParams:   ['AiSensy template values, comma-separated ({first} {name} {phone} {email} {date} {community} {link})', '{first}']
   // While Testing is ON, each NEW payment also gets the reminder, live-link and thank-you emails
   // immediately, and subns24@gmail.com gets a copy (BCC) of every buyer email.
 };
@@ -225,6 +228,8 @@ function onOpen() {
     SpreadsheetApp.getUi().createMenu('TIC-AI')
       .addItem('Send due messages now', 'runMessages')
       .addItem('Send the website-access test email to me', 'sendAccessTestToMe')
+      .addItem('Send the AiSensy WhatsApp test to me', 'sendAiSensyTestToMe')
+      .addItem('Send AiSensy WhatsApp to past buyers', 'sendAiSensyToPastBuyers')
       .addItem('Create website logins for past buyers (no emails)', 'createAccountsForPastBuyers')
       .addItem('Check which package the last payments count as', 'checkPaymentPages')
       .addItem('Send all 5 test messages to me', 'sendTestToMe')
@@ -249,6 +254,7 @@ function tick() {
   try {
     try { oneTimeUpdates_(); } catch (err) { console.error(err); }
     try { checkRecentPayments(); } catch (err) { console.error(err); }
+    try { runAiSensy_(); } catch (err) { console.error(err); }
     const props = PropertiesService.getScriptProperties();
     const lastFull = Number(props.getProperty('LAST_FULL_TICK') || 0);
     if (Date.now() - lastFull >= 4.5 * 60 * 1000) {
@@ -1125,6 +1131,117 @@ function normalizePhone_(raw) {
   if (d.length === 11 && d[0] === '0') return '91' + d.slice(1);
   if (d.length >= 11 && d.length <= 15) return d;
   return '';
+}
+
+/* ================= AiSensy WhatsApp campaign (one message per paying buyer) ================= */
+// API: https://wiki.aisensy.com/en/articles/11501889-api-reference-docs
+// Needs: Script property AISENSY_API_KEY (AiSensy → Developer → API campaign key; secret, never in
+// the sheet) and Settings → "AiSensy campaign name" (a LIVE API campaign). Result goes in Payments
+// column P "AiSensy WhatsApp sent". Workshop buyers only (₹99 / ₹199, or ₹1 while Testing is ON).
+const AISENSY_URL = 'https://backend.aisensy.com/campaign/t1/api/v2';
+
+function aisensyConfigured_(s) {
+  return !!(PropertiesService.getScriptProperties().getProperty('AISENSY_API_KEY') && String(s.aiCampaign || '').trim());
+}
+
+/** Fills the Settings template values for one buyer: {first} {name} {phone} {email} {date} {community} {link}. */
+function aisensyParams_(buyer, s) {
+  const start = workshopStart_(s);
+  const name = String(buyer.name || '').trim();
+  const vals = {
+    first: name.split(/\s+/)[0] || 'there', name: name || 'there',
+    phone: String(buyer.phone || ''), email: String(buyer.email || ''),
+    date: Utilities.formatDate(start, 'Asia/Kolkata', "EEEE, d MMMM yyyy 'at' h:mm a") + ' IST',
+    community: String(s.community || ''), link: String(s.live || '')
+  };
+  const raw = String(s.aiParams == null ? '' : s.aiParams).trim();
+  if (!raw) return [];
+  return raw.split(',').map(t => t.trim().replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : m)));
+}
+
+/** Sends the AiSensy campaign to one buyer. Returns the text stamped in column P. */
+function aisensySend_(buyer, s) {
+  const to = normalizePhone_(buyer.phone);
+  if (!to) return 'not sent — no valid phone number';
+  const body = {
+    apiKey: PropertiesService.getScriptProperties().getProperty('AISENSY_API_KEY'),
+    campaignName: String(s.aiCampaign).trim(),
+    destination: '+' + to,
+    userName: String(buyer.name || '').trim() || 'Workshop participant',
+    templateParams: aisensyParams_(buyer, s),
+    source: 'TIC-AI workshop payment',
+    media: {}, buttons: [], carouselCards: [], location: {}, attributes: {}
+  };
+  const stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM HH:mm');
+  try {
+    const res = UrlFetchApp.fetch(AISENSY_URL, { method: 'post', contentType: 'application/json',
+      payload: JSON.stringify(body), muteHttpExceptions: true });
+    const code = res.getResponseCode();
+    if (code >= 200 && code < 300) return stamp + ' · WhatsApp ✓';
+    let msg = res.getContentText();
+    try { const j = JSON.parse(msg); msg = j.message || j.msg || j.error || msg; } catch (e) {}
+    console.error('AiSensy ' + code + ': ' + res.getContentText());
+    return stamp + ' · WhatsApp ✗ ' + code + ': ' + String(msg).slice(0, 90) + ' (clear this cell to retry)';
+  } catch (err) {
+    return stamp + ' · WhatsApp ✗ ' + String(err.message).slice(0, 90) + ' (clear this cell to retry)';
+  }
+}
+
+/**
+ * Runs every minute: sends the AiSensy campaign to each new paying workshop buyer, once.
+ * The first time it is set up, buyers who paid before are marked and skipped (send them with
+ * the menu item "Send AiSensy WhatsApp to past buyers").
+ */
+function runAiSensy_() {
+  const s = settings_();
+  if (String(s.enabled).trim().toUpperCase() === 'OFF' || !aisensyConfigured_(s)) return;
+  const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+  if (sh.getLastRow() < 2) return;
+  const props = PropertiesService.getScriptProperties();
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, PAYMENT_HEADERS.length).getValues();
+  const captured = r => String(r[COL.status - 1]).trim().toLowerCase() === 'captured';
+  if (!props.getProperty('AISENSY_STARTED')) {
+    rows.forEach((r, i) => {
+      if (captured(r) && r[COL.aisensy - 1] === '') sh.getRange(i + 2, COL.aisensy).setValue('not sent — paid before AiSensy was set up');
+    });
+    props.setProperty('AISENSY_STARTED', new Date().toISOString());
+    return;
+  }
+  const testing = String(s.testing).trim().toUpperCase() === 'ON';
+  const done = {};
+  rows.forEach(r => { if (/WhatsApp ✓/.test(String(r[COL.aisensy - 1]))) done[String(r[COL.phone - 1]).replace(/\D/g, '').slice(-10)] = true; });
+  let sent = 0;
+  for (let i = 0; i < rows.length && sent < 20; i++) {
+    const r = rows[i];
+    if (!captured(r) || r[COL.aisensy - 1] !== '') continue;
+    if (planForRow_(r) === 'course') { sh.getRange(i + 2, COL.aisensy).setValue('not sent — ₹4999 course payment'); continue; }
+    const buyer = { name: String(r[COL.name - 1] || ''), email: String(r[COL.email - 1] || ''), phone: String(r[COL.phone - 1] || '') };
+    const key = buyer.phone.replace(/\D/g, '').slice(-10);
+    if (!testing && key && done[key]) { sh.getRange(i + 2, COL.aisensy).setValue('not sent — same person already received this'); continue; }
+    const result = aisensySend_(buyer, s);
+    sh.getRange(i + 2, COL.aisensy).setValue(result);
+    if (/WhatsApp ✓/.test(result) && key) done[key] = true;
+    sent++;
+  }
+}
+
+/** Menu: sends the AiSensy campaign to buyers marked "paid before AiSensy was set up" (once each). */
+function sendAiSensyToPastBuyers() {
+  const sh = sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
+  if (sh.getLastRow() < 2) return;
+  const rows = sh.getRange(2, COL.aisensy, sh.getLastRow() - 1, 1).getValues();
+  rows.forEach((r, i) => { if (/paid before AiSensy/.test(String(r[0]))) sh.getRange(i + 2, COL.aisensy).setValue(''); });
+  PropertiesService.getScriptProperties().setProperty('AISENSY_STARTED', new Date().toISOString());
+  runAiSensy_();
+}
+
+/** Menu: sends the AiSensy campaign to your own WhatsApp number (Settings) to check the template. */
+function sendAiSensyTestToMe() {
+  const s = settings_();
+  if (!aisensyConfigured_(s)) return 'Add Script property AISENSY_API_KEY and the AiSensy campaign name in Settings first.';
+  const out = aisensySend_({ name: 'Test', email: OWNER_EMAIL, phone: String(s.ownerWa || '') }, s);
+  console.log('AiSensy test → ' + s.ownerWa + ': ' + out);
+  return out;
 }
 
 /* ================= owner email ================= */
