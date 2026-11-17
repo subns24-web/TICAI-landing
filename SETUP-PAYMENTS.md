@@ -197,27 +197,3 @@ Until the key is set, buyers still get the email and the column says
 Gmail limit for scripts: **about 100 emails/day** on a free Google account (1,500 on Google Workspace).
 Each buyer gets 4 emails spread over several days, so this covers ~100 new buyers a day. If the limit
 is hit, unsent messages are retried automatically the next day.
-
-## Step 9 — AiSensy WhatsApp message to every paying buyer
-
-Docs: https://wiki.aisensy.com/en/articles/11501889-api-reference-docs
-
-Within about a minute of a confirmed workshop payment (₹99, or ₹1 while Testing is ON), the script
-sends your AiSensy **API campaign** to the buyer's WhatsApp number, with their name. The result is
-written in Payments column **P "AiSensy WhatsApp sent"** (`WhatsApp ✓`, or `WhatsApp ✗` + the reason;
-clear the cell to retry). ₹4999 course payments are skipped; with Testing OFF a phone number gets it
-once.
-
-1. AiSensy → **Campaigns** → open your API campaign → make sure it is **Live**, and note its exact
-   **campaign name** and how many variables (`{{1}}`, `{{2}}`…) its template has.
-2. AiSensy → **Developer → API campaign key** → copy the key.
-3. Apps Script → ⚙ **Project Settings → Script properties** → add `AISENSY_API_KEY` = that key.
-   (Secret: only here, never in the sheet or a chat.)
-4. Sheet → **Settings**:
-   - **AiSensy campaign name** = the exact campaign name.
-   - **AiSensy template values** = one value per template variable, comma-separated, in order.
-     Placeholders: `{first}` first name, `{name}` full name, `{phone}`, `{email}`, `{date}` workshop
-     date and time, `{community}` WhatsApp community link, `{link}` webinar link. Default `{first}`.
-5. Menu **TIC-AI → Send the AiSensy WhatsApp test to me** sends it to "Your WhatsApp number" in
-   Settings. Buyers who paid before you set this up are skipped; **TIC-AI → Send AiSensy WhatsApp
-   to past buyers** sends it to them once.
