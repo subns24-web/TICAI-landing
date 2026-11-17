@@ -14,7 +14,8 @@
  *  2. Reminder    the evening before (16 h before start)
  *  3. Webinar link 1 hour before start  (needs "Webinar link" filled in Settings)
  *  4. Thank-you   30 min after the workshop ends (WORKSHOP_HOURS)
- * A timer runs every 5 minutes and sends whatever is due. Each send is stamped in the
+ * A timer runs every minute: it picks up new Razorpay payments straight away (and unlocks
+ * the website / sends the welcome at once); the other due messages go every 5 minutes. Each send is stamped in the
  * buyer's row; clear that cell to send that message again.
  *
  * Script properties (Project Settings → Script properties) — secrets never go in this file:
@@ -233,12 +234,39 @@ function onOpen() {
   } catch (err) { /* not opened from the sheet */ }
 }
 
-/** Runs every 5 minutes (installed by setup()). */
+/**
+ * Runs every minute (installed by setup(), or switched over automatically from the old
+ * 5-minute timer). Every minute: ask Razorpay for new payments — a new one is recorded, its
+ * website access unlocked and its welcome sent at once (recordPayment_ → runMessages).
+ * Every 5 minutes: the rest (scheduled messages, Paid tabs). Kept light because Google allows
+ * free accounts about 90 minutes of timer run time a day.
+ */
 function tick() {
-  try { oneTimeUpdates_(); } catch (err) { console.error(err); }
-  try { checkRecentPayments(); } catch (err) { console.error(err); }
-  runMessages();
-  try { syncPaidTabs_(); } catch (err) { console.error(err); }
+  // Skip if the previous run is still busy, so two runs never send the same email twice.
+  const cache = CacheService.getScriptCache();
+  if (cache.get('TICK_RUNNING')) return;
+  cache.put('TICK_RUNNING', '1', 240);
+  try {
+    try { oneTimeUpdates_(); } catch (err) { console.error(err); }
+    try { checkRecentPayments(); } catch (err) { console.error(err); }
+    const props = PropertiesService.getScriptProperties();
+    const lastFull = Number(props.getProperty('LAST_FULL_TICK') || 0);
+    if (Date.now() - lastFull >= 4.5 * 60 * 1000) {
+      props.setProperty('LAST_FULL_TICK', String(Date.now()));
+      runMessages();
+      try { syncPaidTabs_(); } catch (err) { console.error(err); }
+    }
+  } finally {
+    cache.remove('TICK_RUNNING');
+  }
+}
+
+/** Replaces any 'tick' timer with a 1-minute one. */
+function installMinuteTimer_() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'tick' || t.getHandlerFunction() === 'checkRecentPayments')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('tick').timeBased().everyMinutes(1).create();
 }
 
 /* ================= one-time updates (run automatically by the timer) ================= */
@@ -303,6 +331,12 @@ const ONE_TIME_TEST_EMAIL = 'priyankka.156@gmail.com';
  */
 function oneTimeUpdates_() {
   const props = PropertiesService.getScriptProperties();
+
+  // Faster payments: switch the old 5-minute timer to every minute, once.
+  if (!props.getProperty('DONE_TICK_1MIN')) {
+    props.setProperty('DONE_TICK_1MIN', new Date().toISOString());
+    installMinuteTimer_();
+  }
 
   // Show every time in the sheet in India time (it was created on GMT).
   if (ss_().getSpreadsheetTimeZone() !== 'Asia/Kolkata') switchSheetToIST_();
@@ -429,7 +463,7 @@ function alertMissingKeys_() {
     'Someone just reached the payment success page, but the script cannot ask Razorpay whether the payment ' +
     'succeeded, so nothing was added to the Payments tab and no emails were sent.\n\n' +
     'Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Apps Script → Project Settings → Script properties. ' +
-    'Within 5 minutes the script then picks up every successful payment from the last 7 days, adds it ' +
+    'Within a minute the script then picks up every successful payment from the last 7 days, adds it ' +
     'to the sheet and sends the welcome email.\n\n' + ss_().getUrl());
 }
 
@@ -1282,18 +1316,15 @@ function setup() {
   sheet_(PAYMENTS_SHEET, PAYMENT_HEADERS);
   ensureSettings_();
 
-  // One 5-minute timer that checks payments and sends due messages (kept if it already exists).
-  const triggers = ScriptApp.getProjectTriggers();
-  triggers.filter(t => t.getHandlerFunction() === 'checkRecentPayments').forEach(t => ScriptApp.deleteTrigger(t));
-  if (!triggers.some(t => t.getHandlerFunction() === 'tick')) {
-    ScriptApp.newTrigger('tick').timeBased().everyMinutes(5).create();
-  }
+  // One 1-minute timer that checks payments (and every 5 minutes sends due messages).
+  installMinuteTimer_();
+  PropertiesService.getScriptProperties().setProperty('DONE_TICK_1MIN', new Date().toISOString());
 
   const notes = [];
   if (hasKeys_()) { razorpay_('/v1/payments?count=1'); notes.push('Razorpay keys OK'); }
   else notes.push('NO Razorpay keys — payments cannot be confirmed, nothing will be recorded');
   notes.push(waConfigured_() ? 'WhatsApp ON' : 'WhatsApp off (add WA_TOKEN + WA_PHONE_NUMBER_ID)');
-  console.log('Setup done: tabs ready, 5-minute timer installed, ' + notes.join(', ') + '.');
+  console.log('Setup done: tabs ready, 1-minute timer installed, ' + notes.join(', ') + '.');
   MailApp.sendEmail(OWNER_EMAIL, 'TIC-AI sheet connected ✅',
     'Your workshop sheet is connected (' + notes.join(', ') + '): ' + ss_().getUrl());
 }
