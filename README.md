@@ -3,7 +3,7 @@
 Single-file landing page. Be10x funnel architecture, rewritten for Telugu MSME owners.
 Open `index.html` locally. Deploy with `vercel` — no build step, no config.
 
-**Offer:** ₹99 (from ₹1,999) · live 3-hour Telugu workshop · fixed date + time
+**Offer:** ₹99 (from ₹499) · live 3-hour Telugu workshop · fixed date + time
 **Promise:** save ~₹20,000/month by not hiring the assistant you were about to hire
 
 ## Before you run ads — 4 things to replace
